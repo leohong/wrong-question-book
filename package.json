@@ -1,1 +1,17 @@
-{"name":"shiti-question-book","version":"1.0.0","private":true,"type":"module","scripts":{"start":"python -m http.server 4173 --bind 127.0.0.1 --directory dist","test":"node --test tests/domain.test.js tests/reset.test.js","check":"node --check dist/app.js && node --check dist/domain.js && node --check dist/storage.js"}}
+{
+  "name": "shiti-question-book",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "python -m http.server 4173 --bind 127.0.0.1 --directory dist",
+    "test": "node --test tests/domain.test.js tests/reset.test.js tests/storage.test.js tests/backup.test.js",
+    "check": "node --check dist/app.js && node --check dist/domain.js && node --check dist/storage.js && node --check dist/media.js && node --check dist/image-view.js && node --check dist/compression.js && node --check dist/backup.js"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.2.5"
+  },
+  "dependencies": {
+    "fflate": "^0.8.3"
+  }
+}

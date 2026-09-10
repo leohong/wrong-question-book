@@ -24,11 +24,12 @@ export function shuffled(items, random=Math.random) {
 const integer = (x,min,max=Number.MAX_SAFE_INTEGER) => Number.isSafeInteger(x)&&x>=min&&x<=max;
 const date = x => integer(x,0,8640000000000000);
 const photo = x => typeof x==='string' && x.length<12000000 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/]+=*$/.test(x);
-export function validateBackup(data) {
+export function validateBackup(data, {allowImageRefs=false}={}) {
+  const validPhoto = x => photo(x) || (allowImageRefs && typeof x==='string' && /^image:[a-f0-9]{64}$/.test(x));
   if (!data || data.version!==1 || !Array.isArray(data.categories) || !data.categories.length || data.categories.length>100 || !data.categories.every(c=>typeof c==='string'&&c.trim().length>0&&c.length<=30) || new Set(data.categories).size!==data.categories.length || !integer(data.target,1,10) || !Array.isArray(data.cards) || data.cards.length>10000 || !Array.isArray(data.history) || data.history.length>100000) throw Error('備份格式不正確，請選擇由拾題匯出的 JSON 檔案。');
   const ids = new Set();
   for (const c of data.cards) {
-    if (!c || typeof c.id!=='string' || !c.id || c.id.length>100 || ids.has(c.id) || typeof c.title!=='string' || c.title.length>100 || !data.categories.includes(c.category) || !photo(c.question) || !(c.answer===null||photo(c.answer)) || !integer(c.streak,0) || !integer(c.stage,-1,4) || !integer(c.attempts,0) || !integer(c.mistakes,0,c.attempts) || !date(c.created) || !(c.stage===-1?c.due===null:date(c.due))) throw Error('備份中的題目或照片資料不完整。');
+    if (!c || typeof c.id!=='string' || !c.id || c.id.length>100 || ids.has(c.id) || typeof c.title!=='string' || c.title.length>100 || !data.categories.includes(c.category) || !validPhoto(c.question) || !(c.answer===null||validPhoto(c.answer)) || !integer(c.streak,0) || !integer(c.stage,-1,4) || !integer(c.attempts,0) || !integer(c.mistakes,0,c.attempts) || !date(c.created) || !(c.stage===-1?c.due===null:date(c.due))) throw Error('備份中的題目或照片資料不完整。');
     ids.add(c.id);
   }
   for(const h of data.history) if(!h || typeof h.cardId!=='string' || typeof h.category!=='string' || h.category.length>30 || typeof h.correct!=='boolean' || !date(h.at)) throw Error('備份中的練習紀錄不正確。');
