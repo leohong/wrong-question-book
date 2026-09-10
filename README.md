@@ -2,6 +2,18 @@
 
 適合手機操作的繁體中文網頁 App。原生 HTML、CSS、JavaScript，無需安裝前端依賴。
 
+## GitHub Pages 部署
+
+已加入 `.github/workflows/pages.yml`。在儲存庫 **Settings → Pages → Build and deployment → Source** 選擇 **GitHub Actions**，再到 **Actions → Deploy to GitHub Pages → Run workflow** 執行首次部署。之後推送至 `main` 會自動檢查語法、執行測試並發布 `dist`。
+
+預期網址為 `https://leohong.github.io/wrong-question-book/`，需待 Actions 部署成功後才可使用。網頁資源使用相對路徑，可在儲存庫子路徑下運作。部署僅包含 `dist`，不會發布測試、Git 歷史或 Sites 設定。
+
+目前儲存庫為私人；GitHub Free 不支援私人儲存庫的 Pages。如設定頁要求升級，可使用支援的付費方案保留私人儲存庫，或在確認願意公開程式與 Git 歷史後自行改為公開。一般 GitHub Pages 網站即使來源儲存庫私人，網站仍是公開的。
+
+換網址前，請在原本 Sites 網站的「設定與資料」匯出完整備份，再到 GitHub Pages 網址匯入。IndexedDB 依網站來源隔離，題庫不會隨程式部署搬移，也不會上傳到 GitHub。舊網址的資料仍保留在原瀏覽器。
+
+官方說明：https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages
+
 ## 使用
 
 執行 `npm start`，開啟 `http://127.0.0.1:4173`。拍照功能由裝置與瀏覽器的圖片選擇器提供；桌面可選取照片。手機請透過部署後的 HTTPS 網址使用。
