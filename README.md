@@ -4,6 +4,8 @@
 
 ## GitHub Pages 部署
 
+支援兩種發布來源：選擇 **Deploy from a branch → main → / (root)** 時，根目錄的 `index.html` 會自動導向 `dist/index.html`；選擇下方的 **GitHub Actions** 時則直接將 `dist` 發布為網站根目錄。根目錄 `.nojekyll` 可避免將 README 產生為首頁。
+
 已加入 `.github/workflows/pages.yml`。在儲存庫 **Settings → Pages → Build and deployment → Source** 選擇 **GitHub Actions**，再到 **Actions → Deploy to GitHub Pages → Run workflow** 執行首次部署。之後推送至 `main` 會自動檢查語法、執行測試並發布 `dist`。
 
 預期網址為 `https://leohong.github.io/wrong-question-book/`，需待 Actions 部署成功後才可使用。網頁資源使用相對路徑，可在儲存庫子路徑下運作。部署僅包含 `dist`，不會發布測試、Git 歷史或 Sites 設定。
