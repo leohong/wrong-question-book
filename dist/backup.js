@@ -13,7 +13,7 @@ export async function exportArchive(data,onProgress=()=>{},readImage=getImage){
   const reader=blob.stream().getReader();
   try{while(true){const {value,done}=await reader.read();if(done)break;entry.push(value,false);if(error)throw error;}entry.push(new Uint8Array(),true);if(error)throw error;}finally{await reader.cancel();}
  }
- const ids=[...new Set(data.cards.flatMap(c=>[c.question,c.answer]).filter(Boolean))];
+ const ids=[...new Set(data.cards.flatMap(c=>[c.question,c.answer,c.questionOriginal]).filter(Boolean))];
  if(ids.some(id=>!isImageRef(id)))throw Error('請先儲存題庫後再備份。');
  const images={};
  // Determine MIME types while copying each image, with no thumbnail duplication.
@@ -52,7 +52,7 @@ export async function readArchive(file,onProgress=()=>{}){
  let manifest;try{manifest=JSON.parse(await entries.get('manifest.json').text());}catch{throw Error('備份資料格式不正確。');}
  if(manifest.format!=='shiti'||manifest.version!==2||!manifest.images||typeof manifest.images!=='object')throw Error('不支援此備份版本。');
  const data=validateBackup(manifest.data,{allowImageRefs:true}),assets=new Map();
- for(const id of new Set(data.cards.flatMap(c=>[c.question,c.answer]).filter(Boolean))){
+ for(const id of new Set(data.cards.flatMap(c=>[c.question,c.answer,c.questionOriginal]).filter(Boolean))){
   if(!isImageRef(id)||!entries.has(`images/${id.slice(6)}`)||!['image/jpeg','image/png','image/webp'].includes(manifest.images[id]))throw Error('題目照片缺漏，原題庫未變更。');
   assets.set(id,entries.get(`images/${id.slice(6)}`).slice(0,undefined,manifest.images[id]));
  }

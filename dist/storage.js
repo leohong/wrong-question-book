@@ -5,7 +5,7 @@ export const storageDescription='單機模式：照片分開儲存並自動去�
 const STORES=['book','questions','images','thumbnails','reviewLogs','settings'];
 const request = req => new Promise((resolve,reject)=>{req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);});
 const complete = tx => new Promise((resolve,reject)=>{tx.oncomplete=resolve;tx.onabort=tx.onerror=()=>reject(tx.error||Error('資料交易中止。'));});
-const refs = cards => new Set(cards.flatMap(c=>[c.question,c.answer]).filter(isImageRef));
+const refs = cards => new Set(cards.flatMap(c=>[c.question,c.answer,c.questionOriginal]).filter(isImageRef));
 const same = (a,b) => a===b || JSON.stringify(a)===JSON.stringify(b);
 
 // Each instance owns a revision; stale tabs must reload rather than overwrite another tab.
@@ -53,7 +53,7 @@ export function createStorage(name='shiti-question-book') {
       }
       for(const card of data.cards){
         const converted={...card};
-        for(const key of ['question','answer']){
+        for(const key of ['question','answer','questionOriginal']){
           const value=card[key];if(!value||isImageRef(value))continue;
           if(convertedUrls.has(value)){converted[key]=convertedUrls.get(value);continue;}
           const blob=dataUrlToBlob(value),id=await imageId(blob);converted[key]=id;convertedUrls.set(value,id);
@@ -98,7 +98,7 @@ export function createStorage(name='shiti-question-book') {
     const parts=[`{"version":1,"categories":${JSON.stringify(data.categories)},"target":${data.target},"cards":[`];
     for(let i=0;i<data.cards.length;i++){
       const c={...data.cards[i]};
-      for(const key of ['question','answer'])if(isImageRef(c[key]))c[key]=await blobToDataUrl(await getImage(c[key]));
+      for(const key of ['question','answer','questionOriginal'])if(isImageRef(c[key]))c[key]=await blobToDataUrl(await getImage(c[key]));
       parts.push((i?',':'')+JSON.stringify(c));onProgress(i+1,data.cards.length);
     }
     parts.push('],"history":[');
