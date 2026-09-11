@@ -1,4 +1,4 @@
-import {maskedBlob} from './mask-layer.js?v=mask2';
+import {maskedBlob} from './mask-layer.js?v=pick1';
 import {dataUrlToBlob} from './media.js';
 import {getImage} from './storage.js';
 import {isImageRef} from './media.js';
