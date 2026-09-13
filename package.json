@@ -5,13 +5,15 @@
   "type": "module",
   "scripts": {
     "start": "python -m http.server 4173 --bind 127.0.0.1 --directory dist",
-    "test": "node --test tests/domain.test.js tests/reset.test.js tests/storage.test.js tests/backup.test.js",
-    "check": "node --check dist/app.js && node --check dist/domain.js && node --check dist/storage.js && node --check dist/media.js && node --check dist/image-view.js && node --check dist/compression.js && node --check dist/backup.js"
+    "test": "node --test tests/domain.test.js tests/reset.test.js tests/storage.test.js tests/backup.test.js tests/math-answer.test.js",
+    "check": "node --check dist/app.js && node --check dist/domain.js && node --check dist/storage.js && node --check dist/media.js && node --check dist/image-view.js && node --check dist/compression.js && node --check dist/backup.js && node --check dist/math-answer.js"
   },
   "devDependencies": {
-    "fake-indexeddb": "^6.2.5"
+    "fake-indexeddb": "^6.2.5",
+    "jsdom": "30.0.1"
   },
   "dependencies": {
-    "fflate": "^0.8.3"
+    "fflate": "^0.8.3",
+    "katex": "0.18.7"
   }
 }

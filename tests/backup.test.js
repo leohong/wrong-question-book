@@ -8,11 +8,11 @@ globalThis.indexedDB=indexedDB;
 const photo='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Y9Zl1sAAAAASUVORK5CYII=';
 const card=id=>({id,title:'測試',category:'數學',question:photo,answer:photo,streak:2,stage:-1,due:null,attempts:2,mistakes:0,created:1000});
 test('ZIP 共用照片只存一次，另一裝置可完整還原並重建備份',async()=>{
- const source=createStorage('zip-source');await source.load();const data=await source.save({...initialState(),cards:[card('a'),card('b')]});
+ const source=createStorage('zip-source');await source.load();const data=await source.save({...initialState(),cards:[{...card('a'),answerText:'B\n完整解答'},{...card('b'),question:null,questionText:'計算 $\\frac{1}{2}$',answer:null,answerText:'手動答案'}]});
  const zip=await exportArchive(data,()=>{},source.getImage);const backup=await readBackup(zip);
  assert.equal(backup.assets.size,1);assert.deepEqual(backup.data,data);
  const destination=createStorage('zip-destination');await destination.load();const result=await destination.save(backup.data,backup.assets);
- assert.deepEqual(result,data);assert.equal((await destination.getImage(data.cards[0].question)).size,68);
+ assert.deepEqual(result,data);assert.deepEqual(await destination.load(),data);assert.equal((await destination.getImage(data.cards[0].question)).size,68);
  await source.close();await destination.close();
 });
 test('舊 JSON 備份保持相容',async()=>{const data={...initialState(),cards:[card('old')]};assert.deepEqual((await readBackup(new Blob([JSON.stringify(data)]))).data,data);});

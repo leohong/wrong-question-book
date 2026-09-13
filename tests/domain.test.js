@@ -6,3 +6,20 @@ test('連續答對才進入間隔複習，所有階段答錯都重置',()=>{let 
 test('不出沒有答案或未到期的題目，全部範圍可提前練習',()=>{const cards=[base(),{...base(),id:'missing',answer:null},{...base(),id:'future',stage:0,due:2000},{...base(),id:'due',stage:0,due:500}];assert.deepEqual(eligible(cards,'','recommended',1000).map(c=>c.id),['one','due']);assert.deepEqual(eligible(cards,'','due',1000).map(c=>c.id),['due']);assert.equal(eligible(cards,'','all',1000).length,3);assert.equal(eligible(cards,'國文','all',1000).length,0);assert.equal(new Set(shuffled(cards).map(c=>c.id)).size,cards.length);});
 test('備份保留照片與進度，拒絕格式錯誤、重複 ID 和不安全的圖片',()=>{const data={...initialState(),cards:[base()]};assert.deepEqual(validateBackup(JSON.parse(JSON.stringify(data))),data);assert.throws(()=>validateBackup({...data,version:2}));assert.throws(()=>validateBackup({...data,cards:[base(),base()]}));assert.throws(()=>validateBackup({...data,cards:[{...base(),question:'javascript:alert(1)'}]}));assert.throws(()=>validateBackup({...data,cards:[{...base(),stage:7}]}));assert.throws(()=>validateBackup({...data,target:0}));assert.throws(()=>validateBackup({...data,history:[{cardId:'one',correct:true,at:1}]}));});
 test('不同熟練門檻在下次作答生效，原始卡片不被改動',()=>{const c=base();assert.equal(grade(c,true,1,0).stage,0);assert.equal(c.streak,0);assert.equal(grade({...c,streak:3},true,2,0).stage,0);});
+
+ test('文字答案可參與練習且備份保留，空白與無效文字不接受',()=>{
+ const card={...base(),answer:null,answerText:'B\n解題步驟：先移項。'};
+ const data={...initialState(),cards:[card]};
+ assert.deepEqual(eligible([card],'','recommended',1000),[card]);
+ assert.equal(eligible([{...card,answerText:'  \n '}],'','all').length,0);
+ assert.deepEqual(validateBackup(data),data);
+ assert.throws(()=>validateBackup({...data,cards:[{...card,answerText:123}]}));
+ assert.throws(()=>validateBackup({...data,cards:[{...card,answerText:'a'.repeat(10001)}]}));
+ });
+
+test('純文字題目備份相容，空白題目與無效文字拒絕',()=>{
+ const card={...base(),question:null,questionText:'計算 $x+1$'};
+ const data={...initialState(),cards:[card]};
+ assert.deepEqual(validateBackup(data),data);
+ for(const questionText of ['', '  ', 123, 'x'.repeat(10001)])assert.throws(()=>validateBackup({...data,cards:[{...card,questionText}]}));
+});
