@@ -35,7 +35,7 @@ export function createStorage(name='shiti-question-book') {
       request(tx.objectStore('settings').get('state')),request(tx.objectStore('questions').getAll()),
       request(tx.objectStore('reviewLogs').getAll()),request(tx.objectStore('book').get('state'))
     ]);await done;
-    if(meta){revision=meta.revision;snapshot={version:1,categories:meta.categories,target:meta.target,cards:cards.sort((a,b)=>b.created-a.created),history};return snapshot;}
+    if(meta){revision=meta.revision;snapshot={version:1,categories:meta.categories,target:meta.target,cards:cards.sort((a,b)=>b.created-a.created),history};if(!meta.expandedCategories){const categories=[...new Set([...snapshot.categories,'自然','社會'])];if(categories.length<=100)return await save({...snapshot,categories});}return snapshot;}
     revision=0;snapshot=initialState();
     if(!legacy)return null;
     // Validation/conversion happens before writes. Original v1 data remains until commit.
@@ -79,7 +79,7 @@ export function createStorage(name='shiti-question-book') {
         // Append one row for a normal answer; replacement/import also removes obsolete rows.
         for(let i=0;i<data.history.length;i++)if(!same(snapshot.history[i],data.history[i]))tx.objectStore('reviewLogs').put(data.history[i],i);
         for(let i=data.history.length;i<snapshot.history.length;i++)tx.objectStore('reviewLogs').delete(i);
-        tx.objectStore('settings').put({revision:revision+1,categories:data.categories,target:data.target},'state');
+        tx.objectStore('settings').put({revision:revision+1,categories:data.categories,target:data.target,expandedCategories:true},'state');
         tx.objectStore('book').delete('state');
       };
       try {await done;}catch(error){throw Error(conflict?'題庫已在其他分頁更新，請重新載入後再操作。':missing?'找不到題目照片，資料尚未儲存。':error?.name==='QuotaExceededError'?'裝置空間不足，原資料仍保留；請先備份並釋放空間。':'儲存失敗，原資料仍保留，請重試。');}

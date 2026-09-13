@@ -1,7 +1,7 @@
 import {validMask} from './mask-layer.js';
 export const INTERVALS = [1, 3, 7, 14, 30];
 export const DAY = 86400000;
-export const initialState = () => ({version:1,categories:['國文','英文','數學'],target:3,cards:[],history:[]});
+export const initialState = () => ({version:1,categories:['國文','英文','數學','自然','社會'],target:3,cards:[],history:[]});
 export function grade(card, correct, target, now = Date.now()) {
   const next = {...card, attempts:card.attempts+1, mistakes:card.mistakes+(correct?0:1)};
   if (!correct) return {...next,streak:0,stage:-1,due:null};

@@ -10,3 +10,7 @@ nav{display:flex;gap:6px;background:white;border-bottom:1px solid var(--line);pa
 .answer-text{overflow-x:auto}.answer-text .katex{white-space:normal}.answer-text .katex-display{margin:0.8em 0;text-align:left}
 
 .question-text{white-space:pre-wrap;overflow-wrap:anywhere;text-align:left;padding:18px;background:#f4f7fb;border-radius:12px;line-height:1.8;margin:16px 0;overflow-x:auto}.question-text .katex{white-space:normal}.question-text .katex-display{margin:0.8em 0;text-align:left}.library-text{height:180px;margin:0;border-radius:0;overflow:auto}
+
+.ai-copy{margin:16px 0;text-align:left;padding:14px;border:1px solid #ccd5e2;border-radius:12px}.ai-copy summary{cursor:pointer}.ai-copy .answer-text{font-size:14px}
+
+.manual-sections{max-width:860px;margin:auto}.manual-sections .panel{margin-bottom:18px}.manual-sections p{line-height:1.9}.manual-sections code{overflow-wrap:anywhere}
