@@ -2,7 +2,7 @@ import {renderAnswers,previewAnswer} from './math-answer.js';
 import {maskedBlob} from './mask-layer.js?v=pick1';
 import {getImage} from './storage.js';
 import {dataUrlToBlob,isImageRef} from './media.js';
-import {manualErase} from './manual-erase.js?v=pick1';
+import {manualErase} from './manual-erase.js?v=average1';
 import {mountCropSelection} from './crop-selection.js';
 import {initialState,grade,hasQuestion,hasAnswer,eligible,shuffled,validateBackup,INTERVALS} from './domain.js';
 import {load,save,storageDescription} from './storage.js';
