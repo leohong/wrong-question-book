@@ -34,7 +34,8 @@ test('文字視為純文字，公式不能插入連結或外部圖片，輸入�
  assert.ok(element.textContent.includes('<img src=x'));
  root.querySelector('textarea').value=sample;renderAnswers(root);
  assert.equal(root.querySelector('textarea').value,sample);
- previewAnswer(element,'一般答案\n第二行');assert.equal(element.textContent,'一般答案\n第二行');
+ previewAnswer(element,'一般答案\n第二行');
+ assert.match(element.innerHTML,/<br>/);assert.equal(element.textContent,'一般答案第二行');
 });
 
 test('題目卡與答案卡共用公式排版',()=>{
