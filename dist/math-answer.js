@@ -1,4 +1,5 @@
 import renderMathInElement from './vendor/katex/contrib/auto-render.mjs';
+import {markdownToHtml} from './markdown.js';
 export const mathOptions = {
   delimiters: [
     {left:'$$',right:'$$',display:true},
@@ -11,9 +12,12 @@ export const mathOptions = {
   errorCallback:()=>{}
 };
 export function renderAnswers(root){
-  root.querySelectorAll('.answer-text, .question-text').forEach(element=>renderMathInElement(element,{...mathOptions,macros:{}}));
+  root.querySelectorAll('.answer-text, .question-text').forEach(element=>{
+    if(element.dataset.rendered!=='true'){element.innerHTML=markdownToHtml(element.textContent);element.dataset.rendered='true';}
+    renderMathInElement(element,{...mathOptions,macros:{}});
+  });
 }
 export function previewAnswer(element,text){
-  element.textContent=text;
+  element.innerHTML=markdownToHtml(text);element.dataset.rendered='true';
   renderMathInElement(element,{...mathOptions,macros:{}});
 }
