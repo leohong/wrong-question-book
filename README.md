@@ -58,3 +58,16 @@ ZIP 使用隨網站附帶的 fflate 0.8.3（MIT，授權見 `dist/vendor/fflate-
 KaTeX 的程式、樣式、字型及 MIT 授權隨網站存放於 `dist/vendor/katex`，不依賴 CDN。公式設定依 [KaTeX 官方文件](https://katex.org/docs/autorender)。
 
 題目卡也支援手動輸入多行文字與 LaTeX（最多 10,000 字），提供即時預覽。可只輸入題目文字或搭配照片；題庫列表、卡片詳情及練習均顯示公式。純文字題目與答案會一起保存在完整備份中。
+
+## 前端模組
+
+`dist/app.js` 負責啟動、導覽、共用狀態及卡片編輯流程。各頁面的畫面與互動分開放在 `dist/pages/`：
+
+- `library-page.js`：題庫篩選、卡片清單與分頁顯示。
+- `practice-page.js`：練習安排、作答 session 與離開確認。
+- `statistics-page.js`：統計資料計算與圖表畫面。
+- `settings-page.js`：分類、設定、備份匯入／匯出與資料庫重置。
+- `manual-page.js`：使用說明頁。
+- `ui.js`：共用 HTML escaping、日期與頁首模板。
+
+頁面模組透過注入的 `getState`、`commit` 和畫面 callback 協作，不直接讀寫 IndexedDB。資料庫仍統一由 `storage.js` 管理；熟練與選題規則仍由 `domain.js` 管理。
