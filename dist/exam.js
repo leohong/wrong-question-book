@@ -5,6 +5,15 @@ import {renderAnswers} from './math-answer.js';
 const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 let currentExam=null;
 
+const clamp=value=>Math.max(0,Math.min(100,Number(value)||0));
+
+export function examImageFilter(mode='document',background=35,ink=45){
+  if(mode==='original')return 'none';
+  const white=clamp(background),dark=clamp(ink);
+  if(mode==='high-contrast')return `grayscale(1) brightness(${(1.02+white*.0025).toFixed(3)}) contrast(${(2+dark*.025).toFixed(3)})`;
+  return `grayscale(1) brightness(${(1+white*.002).toFixed(3)}) contrast(${(1.15+dark*.012).toFixed(3)})`;
+}
+
 export function examPool(cards,category='',scope='all',now=Date.now()){
   return cards.filter(card=>(!category||card.category===category)&&(
     scope==='all'||
@@ -45,11 +54,15 @@ function paper(exam){
 
 export function renderExam({root,state,optionsHtml,toast}){
   if(currentExam){
-    root.innerHTML=`<div class="exam-controls"><button id="exam-back">← 重新設定</button><div class="row"><button id="exam-reroll">重新抽題</button><button class="primary" id="exam-print">列印／另存 PDF</button></div></div><p class="hint exam-screen-note">已選 ${currentExam.cards.length} 題。列印時會隱藏選單與操作按鈕。</p><div id="exam-output">${paper(currentExam)}</div>`;
+    root.innerHTML=`<div class="exam-controls"><button id="exam-back">← 重新設定</button><div class="row"><button id="exam-reroll">重新抽題</button><button class="primary" id="exam-print">直接列印</button></div></div><section class="exam-image-controls exam-screen-note" aria-label="列印圖片調整"><div class="exam-image-mode"><label class="field" for="exam-image-mode">列印圖片</label><select id="exam-image-mode"><option value="original">原圖</option><option value="document">黑白文件</option><option value="high-contrast">高對比黑白（測試）</option></select></div><label>背景更白 <input id="exam-background" type="range" min="0" max="100" value="${currentExam.background}"></label><label>文字更深 <input id="exam-ink" type="range" min="0" max="100" value="${currentExam.ink}"></label><p id="exam-image-note" class="muted" aria-live="polite"></p></section><p class="hint exam-screen-note">已選 ${currentExam.cards.length} 題。圖片調整只套用在預覽、列印與 PDF，不會修改題庫原圖。請使用 Chrome、Edge 或 Safari 的列印功能。</p><div id="exam-output">${paper(currentExam)}</div>`;
     renderAnswers(root);
+    const output=root.querySelector('#exam-output'),mode=root.querySelector('#exam-image-mode'),background=root.querySelector('#exam-background'),ink=root.querySelector('#exam-ink'),note=root.querySelector('#exam-image-note');
+    mode.value=currentExam.imageMode;
+    const applyImageMode=()=>{currentExam.imageMode=mode.value;currentExam.background=Number(background.value);currentExam.ink=Number(ink.value);const original=mode.value==='original';background.disabled=original;ink.disabled=original;output.style.setProperty('--exam-image-filter',examImageFilter(mode.value,currentExam.background,currentExam.ink));note.textContent=original?'保留照片原本的顏色與底色。':mode.value==='document'?'降低底色、保留較淡的圖形與線條；建議先用這個模式。':'底色最白且較省墨，但淡色細線可能消失，請先查看預覽。';};
+    [mode,background,ink].forEach(control=>control.oninput=applyImageMode);applyImageMode();
     root.querySelector('#exam-back').onclick=()=>{currentExam=null;renderExam({root,state,optionsHtml,toast});};
     root.querySelector('#exam-reroll').onclick=()=>{currentExam.cards=selectExamCards(state.cards,currentExam);renderExam({root,state,optionsHtml,toast});};
-    root.querySelector('#exam-print').onclick=()=>window.print();
+    root.querySelector('#exam-print').onclick=()=>{window.print();setTimeout(()=>toast('若沒有出現列印視窗，請改用 Chrome、Edge 或 Safari 開啟本頁。'),300);};
     return;
   }
   root.innerHTML=`<div class="page-heading"><div><p class="eyebrow">MAKE A TEST</p><h1>自動產生考卷</h1><p>從錯題庫隨機組成題目卷與答案卷。</p></div></div><div class="split"><section class="panel"><div class="form-row"><label class="field" for="exam-title">考卷名稱</label><input id="exam-title" maxlength="80" value="拾題練習卷"></div><div class="form-row"><label class="field" for="exam-category">選擇分類</label><select id="exam-category">${optionsHtml}</select></div><div class="form-row"><label class="field" for="exam-scope">出題範圍</label><select id="exam-scope"><option value="all">所有題目</option><option value="learning">待熟練題目</option><option value="due">已到期的間隔複習</option></select></div><div class="form-row"><label class="field" for="exam-count">題數</label><div class="row count-options"><button data-exam-count="10">10 題</button><button data-exam-count="20" class="active">20 題</button><button data-exam-count="30">30 題</button><input id="exam-count" type="number" min="1" max="200" value="20" aria-label="自訂考卷題數"></div></div><label class="exam-check"><input id="exam-answers" type="checkbox" checked> 在題目卷後附上答案卷</label><p id="exam-available" class="hint"></p><button class="primary wide" id="exam-generate">產生考卷 →</button></section><aside><section class="panel"><span class="tag">列印與 PDF</span><h2>一份題庫，多種練習。</h2><p>每次產生都會隨機抽題且不重複。沒有答案的卡片會在答案卷顯示原題。完成預覽後，可直接列印，或在列印視窗選擇「另存為 PDF」。</p><p class="muted">考卷不會改變題目的熟練度；只有在「開始練習」中判定答對或答錯才會記錄進度。</p></section></aside></div>`;
@@ -57,7 +70,7 @@ export function renderExam({root,state,optionsHtml,toast}){
   const update=()=>{const pool=examPool(state.cards,category.value,scope.value),wanted=Number(count.value),valid=Number.isInteger(wanted)&&wanted>=1&&wanted<=200;available.textContent=pool.length?`這個範圍可使用 ${pool.length} 題，考卷將抽出 ${valid?Math.min(wanted,pool.length):0} 題。`:'這個範圍沒有可用題目。';generate.disabled=!pool.length||!valid;root.querySelectorAll('[data-exam-count]').forEach(button=>button.classList.toggle('active',Number(button.dataset.examCount)===wanted));};
   [category,scope,count].forEach(input=>input.oninput=update);
   root.querySelectorAll('[data-exam-count]').forEach(button=>button.onclick=()=>{count.value=button.dataset.examCount;update();});
-  generate.onclick=()=>{try{const selected=selectExamCards(state.cards,{category:category.value,scope:scope.value,count:Number(count.value)});if(!selected.length)throw Error('這個範圍沒有可用題目。');currentExam={title:root.querySelector('#exam-title').value.trim()||'拾題練習卷',category:category.value,scope:scope.value,count:Number(count.value),includeAnswers:root.querySelector('#exam-answers').checked,cards:selected};renderExam({root,state,optionsHtml,toast});}catch(error){toast(error.message);}};
+  generate.onclick=()=>{try{const selected=selectExamCards(state.cards,{category:category.value,scope:scope.value,count:Number(count.value)});if(!selected.length)throw Error('這個範圍沒有可用題目。');currentExam={title:root.querySelector('#exam-title').value.trim()||'拾題練習卷',category:category.value,scope:scope.value,count:Number(count.value),includeAnswers:root.querySelector('#exam-answers').checked,imageMode:'document',background:35,ink:45,cards:selected};renderExam({root,state,optionsHtml,toast});}catch(error){toast(error.message);}};
   update();
 }
 

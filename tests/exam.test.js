@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {examPool,selectExamCards,paginateExamCards} from '../dist/exam.js';
+import {examPool,selectExamCards,paginateExamCards,examImageFilter} from '../dist/exam.js';
 
 const cards=[
   {id:'a',category:'數學',answer:'image:a',stage:-1,due:null},
@@ -26,4 +26,11 @@ test('雙欄考卷每頁最多十題',()=>{
   const source=Array.from({length:23},(_,index)=>({id:index})),pages=paginateExamCards(source);
   assert.deepEqual(pages.map(page=>page.length),[10,10,3]);
   assert.deepEqual(pages.flat(),source);
+});
+
+test('列印圖片模式可保留原圖或產生不同強度的黑白濾鏡',()=>{
+  assert.equal(examImageFilter('original',100,100),'none');
+  assert.match(examImageFilter('document',35,45),/^grayscale\(1\).*contrast\(/);
+  assert.notEqual(examImageFilter('document',35,45),examImageFilter('high-contrast',35,45));
+  assert.equal(examImageFilter('document',-20,200),examImageFilter('document',0,100));
 });
