@@ -18,16 +18,14 @@ export function copyCardImage(card,key){
   // Start the clipboard write within the click gesture; image preparation is asynchronous.
   return navigator.clipboard.write([new ClipboardItem({'image/png':cardPng(card,key)})]);
 }
+export function copyCardWithPrompt(card,key,prompt=AI_PROMPT){
+  if(!navigator.clipboard?.write || typeof ClipboardItem==='undefined')throw Error('瀏覽器不支援同時複製圖片與指令，請分別使用「複製圖片」及「複製指令」。');
+  const text=new Blob([prompt],{type:'text/plain'});
+  return navigator.clipboard.write([new ClipboardItem({'image/png':cardPng(card,key),'text/plain':text})]);
+}
 export function copyPrompt(prompt=AI_PROMPT){
   if(!navigator.clipboard?.writeText)throw Error('瀏覽器不支援複製，請手動選取下方指令。');
   return navigator.clipboard.writeText(prompt);
-}
-export async function shareCardWithPrompt(card,key,prompt=AI_PROMPT){
-  if(!navigator.share)throw Error('這個瀏覽器不支援系統分享。');
-  const blob=await cardPng(card,key);
-  const file=new File([blob],`${key==='question'?'題目':'答案'}.png`,{type:'image/png'});
-  if(navigator.canShare&&!navigator.canShare({files:[file]}))throw Error('這個瀏覽器不支援分享圖片檔案。');
-  await navigator.share({title:'拾題 AI 辨識',text:prompt,files:[file]});
 }
 export async function downloadCard(card,key){
   const blob=await cardPng(card,key),url=URL.createObjectURL(blob),a=document.createElement('a');

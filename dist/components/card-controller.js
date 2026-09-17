@@ -1,4 +1,4 @@
-import {AI_PROMPT,copyCardImage,copyPrompt,shareCardWithPrompt,downloadCard} from '../ai-copy.js?v=share1';
+import {AI_PROMPT,copyCardImage,copyCardWithPrompt,copyPrompt,downloadCard} from '../ai-copy.js?v=copyall1';
 import {previewAnswer} from '../math-answer.js?v=markdown1';
 import {hasQuestion,hasAnswer} from '../domain.js';
 import {photoAttributes} from '../image-view.js?v=pick1';
@@ -6,10 +6,10 @@ import {esc,formatDate} from '../ui.js';
 import {cardStatus} from '../pages/library-page.js';
 
 export function createCardController({getState,getDefaultCategory,cardService,imageWorkflow,dialog,modal,toast,safely,renderApp,optionsHtml,openQuickAdd,query=document.querySelector.bind(document)}){
-  function aiControls(card,key){return card[key]?`<details class="ai-copy card-tools"><summary>AI 工具（選用）</summary><div class="ai-copy-body"><div class="row" style="flex-wrap:wrap"><button data-ai-share="${key}">分享給 AI</button><button data-ai-image="${key}">複製圖片</button><button data-ai-prompt>複製指令</button><button data-ai-download="${key}">下載圖片</button></div></div></details>`:'';}
+  function aiControls(card,key){return card[key]?`<details class="ai-copy card-tools"><summary>AI 工具（選用）</summary><div class="ai-copy-body"><div class="row" style="flex-wrap:wrap"><button data-ai-all="${key}">全部複製</button><button data-ai-image="${key}">複製圖片</button><button data-ai-prompt>複製指令</button><button data-ai-download="${key}">下載圖片</button></div></div></details>`:'';}
   function bindAi(card){
     const prompt=()=>getState().aiPrompt||AI_PROMPT;
-    modal.querySelectorAll('[data-ai-share]').forEach(button=>button.onclick=safely(async()=>{try{await shareCardWithPrompt(card,button.dataset.aiShare,prompt());toast('已開啟分享選單');}catch(error){if(error.name==='AbortError')return;throw error;}}));
+    modal.querySelectorAll('[data-ai-all]').forEach(button=>button.onclick=safely(async()=>{try{await copyCardWithPrompt(card,button.dataset.aiAll,prompt());}catch{throw Error('全部複製失敗，請分別使用「複製圖片」及「複製指令」。');}toast('已複製圖片與 AI 指令');}));
     modal.querySelectorAll('[data-ai-image]').forEach(button=>button.onclick=safely(async()=>{try{await copyCardImage(card,button.dataset.aiImage);}catch{throw Error('圖片複製失敗，請改用「下載圖片」。');}toast('已複製圖片，接著複製 AI 指令。');}));
     modal.querySelectorAll('[data-ai-prompt]').forEach(button=>button.onclick=safely(async()=>{await copyPrompt(prompt());toast('辨識指令已複製');}));
     modal.querySelectorAll('[data-ai-download]').forEach(button=>button.onclick=safely(async()=>{await downloadCard(card,button.dataset.aiDownload);toast('圖片已準備下載');}));

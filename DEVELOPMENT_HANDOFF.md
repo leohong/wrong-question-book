@@ -37,7 +37,7 @@
 - 熟練度、間隔複習、統計圖及各分類掌握度。
 - 雙欄 A4 自動組卷、答案卷及黑白列印調整。
 - ZIP 備份、舊 JSON 相容、完整性檢查及原子還原。
-- 複製／分享圖片和自訂 AI 指令；不自動上傳。
+- 可全部複製圖片與自訂 AI 指令，也保留分開複製；不自動上傳。
 - 資料庫重置需輸入「重置」確認。
 
 ## 架構進度
@@ -132,6 +132,7 @@ npm run check
 npm test
 npx playwright install chromium
 npm run test:e2e
+npm run verify --silent
 npm start
 ```
 
@@ -140,6 +141,8 @@ npm start
 - Windows Playwright 使用已安裝的 Chrome；CI 使用下載的 Chromium。
 - Node 24：`npx -y node@24 --test`；E2E 可用 `npx -y node@24 node_modules/@playwright/test/cli.js test`。
 - `test-results/`、`playwright-report/` 必須留在 `.gitignore`。
+- `npm run verify --silent` 依序執行語法、Node 與 Playwright 測試；全部成功只輸出「全部完成」，失敗才輸出該步驟的完整內容與 trace 路徑。
+- 開發途中只跑相關測試，例如 AI 工具可用 `npm run test:ai --silent`，Playwright 可用 `npx playwright test -g "全部複製"`；commit 或 push 前才執行完整 verify。
 
 測試層級：
 
@@ -167,7 +170,7 @@ git -c safe.directory="E:/ProjectCode/Wrong question book" status
 
 - Gemini 曾出現 free-tier limit 0、HTTP 429，以及只回傳框座標、不回傳圖片。
 - Hugging Face 去筆跡測試未證明能可靠保留印刷文字和細線。
-- 目前採手動遮罩與外部 AI 複製／分享，不保存 API key，也不自動傳送照片。
+- 目前採手動遮罩與外部 AI 剪貼簿操作，不保存 API key，也不自動傳送照片。
 - Web Share、剪貼簿及相機依瀏覽器而異；自動測試不能取代真實裝置驗收。
 
 ## 後續優先事項

@@ -11,7 +11,7 @@ test('閱讀狀態無法儲存時仍可查看說明',()=>{
  const storage={getItem(){throw Error();},setItem(){throw Error();}};
  assert.equal(needsManual(storage),true);assert.equal(acknowledgeManual(storage),false);
 });
-test('說明包含快速新增、考卷、Markdown、AI 分享與資料管理',()=>{
+test('說明包含快速新增、考卷、Markdown、AI 全部複製與資料管理',()=>{
  const content=manualContent();
- for(const text of ['快速新增','使用題目原圖','Markdown','分享圖片＋指令','自動產生考卷','間隔複習','重置資料庫'])assert.ok(content.includes(text));
+ for(const text of ['快速新增','使用題目原圖','Markdown','全部複製','自動產生考卷','間隔複習','重置資料庫'])assert.ok(content.includes(text));
 });

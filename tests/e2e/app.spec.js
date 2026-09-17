@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 
-const MANUAL_VERSION='2026-09-15.4';
+const MANUAL_VERSION='2026-09-17.1';
 const pixelPng=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAEAAAAAwCAIAAAAuKetIAAAAJ0lEQVR4nO3PQQ0AIBDAsAP/nuGNAvZoFSzZOjNnyNi1W7Zu3QkAAADgB2XQAXlW6j2OAAAAAElFTkSuQmCC','base64');
 
 async function openCleanApp(page){
@@ -73,7 +73,7 @@ test('ZIP 備份可在重置後完整匯入',async({page})=>{
   await expect(page.getByRole('heading',{name:'備份測試'})).toBeVisible();
 });
 
-test('@mobile 手機尺寸可用照片快速新增並產生考卷',async({page})=>{
+test('@mobile 手機尺寸可用照片快速新增並產生考卷',async({page,context})=>{
   await openCleanApp(page);
   await page.getByRole('button',{name:'＋ 快速新增'}).click();
   const chooser=page.waitForEvent('filechooser');
@@ -87,6 +87,14 @@ test('@mobile 手機尺寸可用照片快速新增並產生考卷',async({page})
   await page.locator('#quick-save').click();
   await expect(page.locator('.card')).toHaveCount(1);
   await page.locator('.card').click();
+  await page.getByText('AI 工具（選用）').first().click();
+  await expect(page.getByRole('button',{name:'全部複製'}).first()).toBeVisible();
+  await expect(page.getByRole('button',{name:'分享給 AI'})).toHaveCount(0);
+  await context.grantPermissions(['clipboard-read','clipboard-write'],{origin:'http://127.0.0.1:4178'});
+  await page.getByRole('button',{name:'全部複製'}).first().click();
+  await expect(page.locator('#toast')).toHaveText('已複製圖片與 AI 指令');
+  const clipboardTypes=await page.evaluate(async()=>[...new Set((await navigator.clipboard.read()).flatMap(item=>item.types))]);
+  expect(clipboardTypes).toEqual(expect.arrayContaining(['image/png','text/plain']));
   await page.locator('#edit-card').click();
   await page.locator('[data-erase="question"]').click();
   await expect(page.getByRole('heading',{name:'抹除不需要的部分'})).toBeVisible();

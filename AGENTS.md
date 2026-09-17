@@ -8,6 +8,6 @@ Read `DEVELOPMENT_HANDOFF.md` before changing this project. `README.md` is the u
 - Manual erase pointer-down samples color; only a real drag creates a stroke.
 - Put rules in `domain.js`, mutations in `application/`, UI in pages/components/workflows, and keep `app.js` as the composition root.
 - Update `dist/manual.js` and bump `MANUAL_VERSION` when user-facing instructions change.
-- Run `npm run check`, `npm test`, and `npm run test:e2e` for cross-layer changes. Playwright uses isolated port 4178 data.
+- During implementation, run only related tests. Before commit or push, run `npm run verify --silent`; it prints only `全部完成` on success and full output only for the failed step. Inspect Playwright traces only after failure. Playwright uses isolated port 4178 data.
 - Inspect `git status` and the diff before staging. Push only when the user explicitly requests it.
 - Do not revive external AI handwriting removal without a new explicit request.
