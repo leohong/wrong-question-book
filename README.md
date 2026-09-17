@@ -61,7 +61,7 @@ KaTeX 的程式、樣式、字型及 MIT 授權隨網站存放於 `dist/vendor/k
 
 ## 前端模組
 
-`dist/app.js` 負責啟動、導覽、共用狀態及卡片編輯畫面。各頁面的畫面與互動分開放在 `dist/pages/`：
+`dist/app.js` 負責啟動、導覽及模組組裝。`dist/application/app-store.js` 統一持有目前狀態、初始化資料、依序提交寫入，並在備份或其他寫入期間阻止衝突操作。各頁面的畫面與互動分開放在 `dist/pages/`：
 
 - `library-page.js`：題庫篩選、卡片清單與分頁顯示。
 - `practice-page.js`：練習安排、作答 session 與離開確認。
@@ -77,6 +77,6 @@ KaTeX 的程式、樣式、字型及 MIT 授權隨網站存放於 `dist/vendor/k
 - `practice-service.js`：驗證出題範圍、建立題目順序及提交作答結果。
 - `settings-service.js`：熟練門檻、辨識指令、資料重置及備份取代。
 
-頁面透過注入的服務與畫面 callback 協作，不直接組合整份資料或讀寫 IndexedDB。服務呼叫由 `app.js` 注入的 `commit`，資料庫仍統一由 `storage.js` 管理；熟練與選題規則仍由 `domain.js` 管理。ZIP 解析與產生由 `backup.js` 處理，匯入後的資料取代則經過設定服務。
+頁面透過注入的服務與畫面 callback 協作，不直接組合整份資料或讀寫 IndexedDB。服務從 App Store 取得唯讀狀態並提交變更，App Store 再呼叫 `storage.js`；熟練與選題規則仍由 `domain.js` 管理。ZIP 解析與產生由 `backup.js` 處理，匯入後的資料取代則經過設定服務。
 
 卡片的顯示、編輯與 AI 工具綁定集中在 `dist/components/card-controller.js`；裁切、抹除銜接與壓縮預覽集中在 `dist/workflows/image-workflow.js`。兩者透過依賴注入取得服務與畫面工具，`app.js` 只負責建立模組及串接導覽。
