@@ -8,7 +8,7 @@
 
 已加入 `.github/workflows/pages.yml`。在儲存庫 **Settings → Pages → Build and deployment → Source** 選擇 **GitHub Actions**，再到 **Actions → Deploy to GitHub Pages → Run workflow** 執行首次部署。之後推送至 `main` 會自動檢查語法、執行測試並發布 `dist`。
 
-預期網址為 `https://leohong.github.io/wrong-question-book/`，需待 Actions 部署成功後才可使用。網頁資源使用相對路徑，可在儲存庫子路徑下運作。部署僅包含 `dist`，不會發布測試、Git 歷史或 Sites 設定。
+正式網站：[https://leohong.github.io/wrong-question-book/](https://leohong.github.io/wrong-question-book/)。網頁資源使用相對路徑，可在儲存庫子路徑下運作。部署僅包含 `dist`，不會發布測試、Git 歷史或 Sites 設定。
 
 此儲存庫與 GitHub Pages 網站目前為公開。題庫與照片只保存在使用者的瀏覽器，不會隨程式碼推送。
 
@@ -78,3 +78,5 @@ KaTeX 的程式、樣式、字型及 MIT 授權隨網站存放於 `dist/vendor/k
 - `settings-service.js`：熟練門檻、辨識指令、資料重置及備份取代。
 
 頁面透過注入的服務與畫面 callback 協作，不直接組合整份資料或讀寫 IndexedDB。服務呼叫由 `app.js` 注入的 `commit`，資料庫仍統一由 `storage.js` 管理；熟練與選題規則仍由 `domain.js` 管理。ZIP 解析與產生由 `backup.js` 處理，匯入後的資料取代則經過設定服務。
+
+卡片的顯示、編輯與 AI 工具綁定集中在 `dist/components/card-controller.js`；裁切、抹除銜接與壓縮預覽集中在 `dist/workflows/image-workflow.js`。兩者透過依賴注入取得服務與畫面工具，`app.js` 只負責建立模組及串接導覽。

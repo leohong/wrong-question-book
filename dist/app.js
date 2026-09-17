@@ -1,19 +1,12 @@
 import {needsManual} from './manual.js';
-import {AI_PROMPT,copyCardImage,copyPrompt,shareCardWithPrompt,downloadCard} from './ai-copy.js?v=share1';
-import {renderAnswers,previewAnswer} from './math-answer.js?v=markdown1';
-import {maskedBlob} from './mask-layer.js?v=pick1';
-import {getImage} from './storage.js';
-import {dataUrlToBlob,isImageRef,blobToDataUrl} from './media.js';
-import {manualErase} from './manual-erase.js?v=average1';
-import {mountCropSelection} from './crop-selection.js';
-import {initialState,hasQuestion,hasAnswer} from './domain.js';
+import {renderAnswers} from './math-answer.js?v=markdown1';
+import {initialState} from './domain.js';
 import {load,save} from './storage.js';
-import {photoAttributes,observeImages} from './image-view.js?v=pick1';
-import {compressCanvas} from './compression.js';
+import {observeImages} from './image-view.js?v=pick1';
 import {startQuickAdd} from './quick-add.js?v=quick1';
 import {renderExam as renderExamPage} from './exam.js?v=print6';
-import {$,esc,formatDate} from './ui.js';
-import {createLibraryPage,cardStatus} from './pages/library-page.js';
+import {$,esc} from './ui.js';
+import {createLibraryPage} from './pages/library-page.js';
 import {createPracticePage} from './pages/practice-page.js';
 import {renderStatisticsPage,cardCounts} from './pages/statistics-page.js';
 import {renderManualPage} from './pages/manual-page.js';
@@ -22,35 +15,34 @@ import {createCardService} from './application/card-service.js';
 import {createCategoryService} from './application/category-service.js';
 import {createPracticeService} from './application/practice-service.js';
 import {createSettingsService} from './application/settings-service.js';
+import {createImageWorkflow} from './workflows/image-workflow.js';
+import {createCardController} from './components/card-controller.js';
 
-function quickAdd(){return startQuickAdd({dialog,getState:()=>state,saveCard:draft=>cardService.save(draft),render,toast,openFull:()=>editCard(null,true)});}
+function quickAdd(){return startQuickAdd({dialog,getState:()=>state,saveCard:draft=>cardService.save(draft),render,toast,openFull:()=>cardController.edit(null,true)});}
 function renderExam(){return renderExamPage({root:$('#main'),state,optionsHtml:opts('',true),toast});}
-
-function previewCompression(canvas,onSave,onBack,mask=null){
- dialog('檢查照片清晰度', '<label class="field" for="compression-mode">儲存品質</label><select id="compression-mode"><option value="clear">清晰：小字、公式與密集解答</option><option value="balanced" selected>平衡：一般題目（預設）</option><option value="small">省空間：字大、內容簡單</option></select><p class="hint">請放大檢查負號、小數點與指數。確認後才會使用這個版本。</p><p id="compression-size" aria-live="polite">正在產生預覽…</p><div style="overflow:auto;max-height:45vh"><img id="compression-preview" alt="壓縮後的實際照片" style="display:block;max-width:100%"></div><div class="actions"><button id="compression-zoom">以原始像素檢查</button><button id="compression-back">返回抹除</button><button id="compression-save" class="primary" disabled>使用這張照片</button></div>');
- let sequence=0,result=null,url=null,zoom=false;
- const cleanup=()=>{sequence++;if(url)URL.revokeObjectURL(url);modal.removeEventListener('close',cleanup);};
- modal.addEventListener('close',cleanup,{once:true});
- async function update(){
-  const seq=++sequence;result=null;$('#compression-save').disabled=true;$('#compression-size').textContent='正在產生預覽…';
-  try{const next=await compressCanvas(canvas,$('#compression-mode').value);if(seq!==sequence||!$('#compression-preview'))return;
-   if(url)URL.revokeObjectURL(url);const display=await maskedBlob(next.blob,mask);if(seq!==sequence)return;url=URL.createObjectURL(display);result=next;
-   $('#compression-preview').src=url;$('#compression-size').textContent=`${Math.round(next.blob.size/1024)} KB · ${next.width} × ${next.height} · ${next.blob.type==='image/webp'?'WebP':'JPEG'}`;$('#compression-save').disabled=false;
-  }catch(error){if(seq===sequence)$('#compression-size').textContent=error.message;}
- }
- $('#compression-mode').onchange=update;
- $('#compression-zoom').onclick=()=>{zoom=!zoom;$('#compression-preview').style.maxWidth=zoom?'none':'100%';$('#compression-zoom').textContent=zoom?'縮放至視窗':'以原始像素檢查';};
- $('#compression-back').onclick=()=>{cleanup();onBack();};
- $('#compression-save').onclick=safely(async()=>{if(!result)throw Error('請等待預覽完成。');const seq=sequence,data=await blobToDataUrl(result.blob);if(seq!==sequence||!modal.open)return;cleanup();onSave(data);});
- update();
-}
 let state=initialState(),tab='library',busy=false,timer;
 const app=$('#app'),modal=$('#modal');
 const cardService=createCardService({getState:()=>state,commit});
 const categoryService=createCategoryService({getState:()=>state,commit});
 const practiceService=createPracticeService({getState:()=>state,commit});
 const settingsService=createSettingsService({getState:()=>state,commit});
-const libraryPage=createLibraryPage({getState:()=>state,getRoot:()=>$('#main'),onAdd:()=>editCard(),onOpen:viewCard});
+const imageWorkflow=createImageWorkflow({dialog,modal,safely,renderAnswers,query:$});
+let libraryPage;
+const cardController=createCardController({
+ getState:()=>state,
+ getDefaultCategory:()=>libraryPage.category,
+ cardService,
+ imageWorkflow,
+ dialog,
+ modal,
+ toast,
+ safely,
+ renderApp:()=>render(),
+ optionsHtml:opts,
+ openQuickAdd:quickAdd,
+ query:$
+});
+libraryPage=createLibraryPage({getState:()=>state,getRoot:()=>$('#main'),onAdd:()=>cardController.edit(),onOpen:cardController.view});
 const practicePage=createPracticePage({
  getState:()=>state,
  getRoot:()=>$('#main'),
@@ -61,8 +53,8 @@ const practicePage=createPracticePage({
  toast,
  safely,
  optionsHtml:opts,
- questionContent,
- answerContent
+ questionContent:cardController.questionContent,
+ answerContent:cardController.answerContent
 });
 const settingsPage=createSettingsPage({
  getState:()=>state,
@@ -99,15 +91,3 @@ async function commit(next,assets){if(settingsPage.busy)throw Error('備份處�
 function safely(fn){return async e=>{const b=e?.currentTarget;try{if(b?.tagName==='BUTTON')b.disabled=true;await fn(e);}catch(error){toast(error.message||'操作失敗，請再試一次。');}finally{if(b?.isConnected)b.disabled=false;}};}
 function opts(selected='',all=false){return(all?'<option value="">全部分類</option>':'')+state.categories.map(c=>`<option ${c===selected?'selected':''} value="${esc(c)}">${esc(c)}</option>`).join('');}
 function render(nextTab){if(nextTab)tab=nextTab;app.innerHTML=`<header><a class="brand" href="#">▣ 拾題 <small>錯題本</small></a><span>每一道錯題，都有下一次進步。</span></header><nav aria-label="主要選單">${[['library','▦','我的題庫'],['practice','▹','開始練習'],['exam','▤','產生考卷'],['stats','◷','學習統計'],['settings','⚙','設定與資料'],['manual','?','使用說明']].map(([key,icon,label])=>`<button data-tab="${key}" class="${tab===key?'active':''}" aria-current="${tab===key?'page':'false'}">${icon}　${label}</button>`).join('')}</nav><main id="main"></main><footer>拾題 · 讓每次練習都算數</footer>`;app.querySelectorAll('[data-tab]').forEach(button=>button.onclick=()=>{const go=()=>render(button.dataset.tab);if(practicePage.active&&tab==='practice'&&button.dataset.tab!=='practice')practicePage.confirmLeave(go);else go();});$('.brand').onclick=event=>{event.preventDefault();const go=()=>render('library');practicePage.active?practicePage.confirmLeave(go):go();};if(tab==='library')libraryPage.render();else if(tab==='practice')practicePage.render();else if(tab==='exam')renderExam();else if(tab==='stats')renderStatisticsPage($('#main'),state);else if(tab==='manual')renderManualPage($('#main'),{onDone:()=>render('library'),toast});else settingsPage.render();}
-function aiCopyControls(card,key){return card[key]?`<details class="ai-copy card-tools"><summary>AI 工具（選用）</summary><div class="ai-copy-body"><div class="row" style="flex-wrap:wrap"><button data-ai-share="${key}">分享給 AI</button><button data-ai-image="${key}">複製圖片</button><button data-ai-prompt>複製指令</button><button data-ai-download="${key}">下載圖片</button></div></div></details>`:'';}
-function bindAiCopy(card){
- modal.querySelectorAll('[data-ai-share]').forEach(b=>b.onclick=safely(async()=>{try{await shareCardWithPrompt(card,b.dataset.aiShare,state.aiPrompt||AI_PROMPT);toast('已開啟分享選單');}catch(error){if(error.name==='AbortError')return;throw error;}}));
- modal.querySelectorAll('[data-ai-image]').forEach(b=>b.onclick=safely(async()=>{try{await copyCardImage(card,b.dataset.aiImage);}catch{throw Error('圖片複製失敗，請改用「下載圖片」。');}toast('已複製圖片，接著複製 AI 指令。');}));
- modal.querySelectorAll('[data-ai-prompt]').forEach(b=>b.onclick=safely(async()=>{await copyPrompt(state.aiPrompt||AI_PROMPT);toast('辨識指令已複製');}));
- modal.querySelectorAll('[data-ai-download]').forEach(b=>b.onclick=safely(async()=>{await downloadCard(card,b.dataset.aiDownload);toast('圖片已準備下載');}));
-}
-function questionContent(c){return (c.question?`<img class="photo-preview" ${photoAttributes(c.question,false,c.questionMask)} alt="題目">`:'')+(c.questionText?.trim()?`<div class="question-text">${esc(c.questionText)}</div>`:'');}
-function answerContent(c){return (c.answer?`<img class="photo-preview" ${photoAttributes(c.answer,false,c.answerMask)} alt="答案">`:'')+(c.answerText?.trim()?`<div class="answer-text">${esc(c.answerText)}</div>`:'');}
-function viewCard(id){const c=state.cards.find(c=>c.id===id);if(!c)return;dialog(esc(c.title),`<div class="row between card-summary"><span class="tag">${esc(c.category)}</span><span class="muted">${cardStatus(c)}</span></div><section class="card-detail-section"><h3>題目</h3>${questionContent(c)}${aiCopyControls(c,'question')}</section><section class="card-detail-section"><h3>答案</h3>${hasAnswer(c)?answerContent(c):'<p class="hint">還沒有答案，補上後就可以加入練習。</p>'}${aiCopyControls(c,'answer')}</section><p class="muted card-history">練習 ${c.attempts} 次 · 答錯 ${c.mistakes} 次 · 建立於 ${formatDate(c.created)}</p><div class="actions"><button class="danger" id="delete-card">刪除</button><button class="primary" id="edit-card">${hasAnswer(c)?'編輯':'補上答案'}</button></div>`);bindAiCopy(c);$('#edit-card').onclick=()=>editCard(c);$('#delete-card').onclick=()=>{dialog('刪除這道題目？',`<p>「${esc(c.title)}」的照片將被刪除。過去的練習次數會保留在統計中。</p><div class="actions"><button id="cancel-delete">取消</button><button class="danger" id="confirm-delete">刪除題目</button></div>`);$('#cancel-delete').onclick=()=>viewCard(c.id);$('#confirm-delete').onclick=safely(async()=>{await cardService.remove(c.id);modal.close();render();toast('題目已刪除');});};}
-function editCard(existing,full=false){if(!existing&&!full)return quickAdd();const draft=existing?{...existing}:{title:'',category:libraryPage.category||state.categories[0],question:null,answer:null};function show(){dialog(existing?'編輯題目卡':'新增題目卡',`<div class="form-row"><label class="field" for="card-title">題目名稱</label><input id="card-title" maxlength="100" placeholder="例如：一元二次方程式・第 5 題" value="${esc(draft.title)}"></div><label class="field" for="card-category">分類</label><select id="card-category">${opts(draft.category)}</select>${['question','answer'].map((key,i)=>`<div class="upload"><h3>${i?'02 答案卡 <span class="muted">（可稍後補上）</span>':'01 題目卡'}</h3>${draft[key]?`<img class="photo-preview" ${photoAttributes(draft[key],false,draft[key+'Mask'])} alt="${i?'答案':'題目'}預覽">`:`<p>${i?'拍下解答，和這道題目配對。':'拍照或選取照片，拖曳框選題目範圍。'}</p>`}<div class="row" style="justify-content:center;flex-wrap:wrap"><button data-upload="${key}" data-camera="true">${draft[key]?'重拍':'拍照'}</button><button data-upload="${key}">選擇圖片</button>${draft[key]?`<button data-erase="${key}">編輯抹除</button><button class="danger" data-remove-image="${key}">刪除圖片</button>`:''}${i?`<button id="answer-from-question" ${!draft.questionOriginal?'disabled':''}>使用題目卡原始圖片</button>`:''}</div>${aiCopyControls(draft,key)}<details class="manual-answer card-tools" ${draft[key+'Text']?.trim()||!draft[key]?'open':''}><summary>手動輸入${i?'答案':'題目'}（選用）</summary><div class="manual-answer-body"><textarea id="card-${key}-text" rows="5" maxlength="10000" aria-label="手動輸入${i?'答案':'題目'}" placeholder="輸入${i?'答案與解題步驟':'題目與選項'}，支援 Markdown 與 $...$ 公式。">${esc(draft[key+'Text']||'')}</textarea><label class="field">${i?'答案':'題目'}預覽</label><div id="${key}-text-preview" class="${key}-text"></div></div></details>${i?'<p class="muted">使用裁切後、抹除前的圖片。舊卡若未保留原圖，請重新選圖。</p>':''}</div>`).join('')}<div class="actions"><button id="cancel-edit">取消</button><button class="primary" id="save-card" ${!hasQuestion(draft)?'disabled':''}>儲存卡片</button></div>`);bindAiCopy(draft);const updateSaveButton=()=>$('#save-card').disabled=!hasQuestion(draft);['question','answer'].forEach(key=>{const update=()=>previewAnswer($('#'+key+'-text-preview'),draft[key+'Text']||'');$('#card-'+key+'-text').oninput=e=>{draft[key+'Text']=e.target.value;update();updateSaveButton();};update();});$('#card-title').oninput=e=>draft.title=e.target.value;$('#card-category').onchange=e=>draft.category=e.target.value;$('#cancel-edit').onclick=()=>modal.close();$('#answer-from-question').onclick=()=>{if(!draft.questionOriginal)return;draft.answer=draft.questionOriginal;draft.answerMask={version:1,width:1,height:1,strokes:[]};show();};modal.querySelectorAll('[data-remove-image]').forEach(b=>b.onclick=()=>{const key=b.dataset.removeImage;draft[key]=null;delete draft[key+'Mask'];if(key==='question')delete draft.questionOriginal;show();});modal.querySelectorAll('[data-erase]').forEach(b=>b.onclick=safely(async()=>{const key=b.dataset.erase,ref=draft[key],blob=isImageRef(ref)?await getImage(ref):dataUrlToBlob(ref),img=await createImageBitmap(blob),base=document.createElement('canvas');base.width=img.width;base.height=img.height;base.getContext('2d').drawImage(img,0,0);img.close();manualErase(base,dialog,(edited,back,mask)=>{draft[key+'Mask']=mask;show();},show,draft[key+'Mask']);}));modal.querySelectorAll('[data-upload]').forEach(b=>b.onclick=()=>{const input=document.createElement('input');input.type='file';input.accept='image/*';if(b.dataset.camera)input.setAttribute('capture','environment');input.onchange=safely(async()=>{if(input.files[0])await cropImage(input.files[0],(url,original,mask)=>{draft[b.dataset.upload]=url;draft[b.dataset.upload+'Mask']=mask;if(b.dataset.upload==='question')draft.questionOriginal=original;show();},show);});input.click();});$('#save-card').onclick=safely(async()=>{await cardService.save(draft,{existingId:existing?.id||null});modal.close();render();toast(existing?'卡片已更新':'題目已收藏');});}show();}
-async function cropImage(file,onSave,onCancel){if(!file.type.startsWith('image/'))throw Error('請選擇照片檔案。');if(file.size>35*1024*1024)throw Error('照片太大，請選擇 35 MB 以下的圖片。');const url=URL.createObjectURL(file),img=new Image();try{await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=()=>reject(Error('無法讀取這張照片，請改用 JPG、PNG 或 WebP。'));img.src=url;});}catch(e){URL.revokeObjectURL(url);throw e;}dialog('框選要保留的範圍','<p class="hint">拖曳畫出方框；拉動四邊調整大小，按住框內移動。點框上的 × 可清除，再重新框選。</p><div class="crop-wrap"><canvas id="crop" aria-label="拖曳框選照片範圍"></canvas></div><p class="muted" id="crop-state" aria-live="polite">目前保留整張照片</p><div class="actions"><button id="cancel-crop">取消</button><button id="full-crop">選取全圖</button><button class="primary" id="use-crop">使用這個範圍</button></div>');const canvas=$('#crop'),ctx=canvas.getContext('2d'),scale=Math.min(1,1800/Math.max(img.naturalWidth,img.naturalHeight));canvas.width=Math.round(img.naturalWidth*scale);canvas.height=Math.round(img.naturalHeight*scale);const selection=mountCropSelection(canvas,img,$('#crop-state'));$('#full-crop').onclick=()=>selection.selectAll();const cancel=()=>{selection.destroy();onCancel();};$('#cancel-crop').onclick=cancel;renderAnswers(modal);modal.querySelector('.close').onclick=cancel;modal.addEventListener('close',()=>selection.destroy(),{once:true});$('#use-crop').onclick=safely(()=>{const box=selection.getBox();if(box.w<15||box.h<15)throw Error('範圍太小，請重新框選。');const out=document.createElement('canvas');out.width=Math.round(box.w);out.height=Math.round(box.h);const context=out.getContext('2d');context.fillStyle='white';context.fillRect(0,0,out.width,out.height);context.drawImage(img,box.x/scale,box.y/scale,box.w/scale,box.h/scale,0,0,out.width,out.height);selection.destroy();manualErase(out,dialog,(edited,back,mask)=>previewCompression(out,url=>onSave(url,url,mask),back,mask),()=>cropImage(file,onSave,onCancel));});URL.revokeObjectURL(url);}
