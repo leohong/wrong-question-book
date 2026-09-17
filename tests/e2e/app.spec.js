@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 
-const MANUAL_VERSION='2026-09-17.5';
+const MANUAL_VERSION='2026-09-17.6';
 const pixelPng=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAEAAAAAwCAIAAAAuKetIAAAAJ0lEQVR4nO3PQQ0AIBDAsAP/nuGNAvZoFSzZOjNnyNi1W7Zu3QkAAADgB2XQAXlW6j2OAAAAAElFTkSuQmCC','base64');
 
 async function openCleanApp(page){
@@ -9,6 +9,7 @@ async function openCleanApp(page){
   const welcome=page.getByRole('heading',{name:'開始使用拾題'});
   if(await welcome.isVisible())await page.getByRole('button',{name:'使用此裝置儲存'}).click();
   await expect(page.getByRole('heading',{name:'我的題庫'})).toBeVisible();
+  if(await welcome.isVisible())await page.getByRole('button',{name:'使用此裝置儲存'}).click();
 }
 
 async function addTextCard(page,{title='分數練習',question='計算 **1/2 + 1/3**',answer='$5/6$'}={}){
@@ -76,6 +77,7 @@ test('ZIP 備份可在重置後完整匯入',async({page})=>{
 test('快速新增取消下一題仍保留先前已儲存卡片',async({page})=>{
   await openCleanApp(page);
   await page.getByRole('button',{name:'＋ 快速新增'}).click();
+  await page.locator('#quick-chapter').fill('代數');
   const chooser=page.waitForEvent('filechooser');
   await page.getByRole('button',{name:'選擇圖片',exact:true}).click();
   await (await chooser).setFiles({name:'question.png',mimeType:'image/png',buffer:pixelPng});
@@ -94,6 +96,7 @@ test('快速新增取消下一題仍保留先前已儲存卡片',async({page})=>
 test('@mobile 手機尺寸可用照片快速新增並產生考卷',async({page,context})=>{
   await openCleanApp(page);
   await page.getByRole('button',{name:'＋ 快速新增'}).click();
+  await page.locator('#quick-chapter').fill('代數');
   const chooser=page.waitForEvent('filechooser');
   await page.getByRole('button',{name:'選擇圖片',exact:true}).click();
   await (await chooser).setFiles({name:'question.png',mimeType:'image/png',buffer:pixelPng});
@@ -127,7 +130,9 @@ test('@mobile 手機尺寸可用照片快速新增並產生考卷',async({page,c
   await expect(page.getByRole('heading',{name:'編輯題目卡'})).toBeVisible();
   await page.locator('#save-card').click();
   await page.getByRole('button',{name:/產生考卷/}).click();
-  await page.locator('#exam-count').fill('1');
+  await page.locator('#exam-selection-mode').selectOption('manual');
+  await expect(page.locator('#exam-manual-list')).toContainText('國文 · 代數');
+  await page.locator('[data-exam-card]').check();
   await page.locator('#exam-generate').click();
   await expect(page.getByText('已選 1 題。')).toBeVisible();
   await expect(page.locator('#exam-output')).toContainText('拾題練習卷');
@@ -138,9 +143,11 @@ test('@mobile 手機尺寸可用照片快速新增並產生考卷',async({page,c
   }));
   expect(layout.width/layout.height).toBeCloseTo(210/297,1);
   expect(layout.columns).toBe(2);
-  const before=Number(await page.locator('#exam-pages').evaluate(element=>getComputedStyle(element).zoom));
+  const before=await page.locator('#exam-pages').evaluate(element=>element.getBoundingClientRect().width);
+  const beforeText=await page.locator('.exam-item h3').first().evaluate(element=>element.getBoundingClientRect().height);
   await page.getByRole('button',{name:'放大考卷'}).click();
-  await expect.poll(()=>page.locator('#exam-pages').evaluate(element=>Number(getComputedStyle(element).zoom))).toBeGreaterThan(before);
+  await expect.poll(()=>page.locator('#exam-pages').evaluate(element=>element.getBoundingClientRect().width)).toBeGreaterThan(before);
+  await expect.poll(()=>page.locator('.exam-item h3').first().evaluate(element=>element.getBoundingClientRect().height)).toBeGreaterThan(beforeText);
 });
 
 test('@mobile 手機尺寸可顯示未加分隔符的 LaTeX 公式',async({page})=>{

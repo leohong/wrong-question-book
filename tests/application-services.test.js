@@ -14,11 +14,12 @@ function harness(seed=initialState()){
 
 test('card service creates, updates, and removes cards with stable study fields',async()=>{
   const store=harness(),service=createCardService({getState:store.getState,commit:store.commit,randomUUID:()=> 'card-1',now:()=>123});
-  const created=await service.save({category:'數學',question:null,questionText:'  1 + 1 = ?  ',answer:null,answerText:' 2 '});
+  const created=await service.save({category:'數學',chapter:' 加減法 ',question:null,questionText:'  1 + 1 = ?  ',answer:null,answerText:' 2 '});
   assert.equal(created.id,'card-1');
   assert.equal(created.title,'數學錯題 1');
   assert.equal(created.questionText,'1 + 1 = ?');
   assert.equal(created.answerText,'2');
+  assert.equal(created.chapter,'加減法');
   assert.equal(created.stage,-1);
   const updated=await service.save({...created,title:' 新名稱 ',answerText:'  兩  '},{existingId:'card-1'});
   assert.equal(updated.title,'新名稱');

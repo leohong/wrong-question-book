@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {examPool,selectExamCards,paginateExamCards,examImageFilter,examZoom} from '../dist/exam.js';
 
 const cards=[
-  {id:'a',category:'數學',answer:'image:a',stage:-1,due:null},
-  {id:'b',category:'數學',answerText:'B',stage:0,due:100},
+  {id:'a',category:'數學',chapter:'代數',answer:'image:a',stage:-1,due:null},
+  {id:'b',category:'數學',chapter:'幾何',answerText:'B',stage:0,due:100},
   {id:'c',category:'英文',answer:'image:c',stage:0,due:999},
   {id:'d',category:'數學',answer:null,answerText:'',stage:-1,due:null}
 ];
@@ -20,6 +20,12 @@ test('隨機組卷不重複並限制題數',()=>{
   assert.equal(selected.length,2);
   assert.equal(new Set(selected.map(card=>card.id)).size,2);
   assert.throws(()=>selectExamCards(cards,{count:0}),/1 到 200/);
+});
+
+test('考卷可依一個或多個章節篩選',()=>{
+  assert.deepEqual(examPool(cards,'數學','all',500,['代數']).map(card=>card.id),['a']);
+  assert.deepEqual(selectExamCards(cards,{category:'數學',chapters:['幾何'],count:10,random:()=>0}).map(card=>card.id),['b']);
+  assert.deepEqual(examPool(cards,'數學','all',500,['']).map(card=>card.id),['d']);
 });
 
 test('雙欄考卷每頁最多十題',()=>{

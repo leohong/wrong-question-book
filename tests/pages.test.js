@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {cardStatus} from '../dist/pages/library-page.js';
+import {cardStatus,chaptersFor} from '../dist/pages/library-page.js';
 import {cardCounts} from '../dist/pages/statistics-page.js';
 import {esc} from '../dist/ui.js';
 
@@ -22,4 +22,10 @@ test('頁面共用的卡片狀態與統計採相同規則',()=>{
 
 test('共用 HTML escaping 防止頁面模板插入標記',()=>{
   assert.equal(esc('<img src="x"> & test'), '&lt;img src=&quot;x&quot;&gt; &amp; test');
+});
+
+test('題庫章節依科目整理並去除重複',()=>{
+  const cards=[{category:'數學',chapter:'幾何'},{category:'數學',chapter:'代數'},{category:'數學',chapter:'代數'},{category:'英文',chapter:'閱讀'},{category:'數學'}];
+  assert.deepEqual(chaptersFor(cards,'數學'),['代數','幾何']);
+  assert.deepEqual(chaptersFor(cards),['代數','幾何','閱讀']);
 });

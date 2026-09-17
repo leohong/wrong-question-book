@@ -6,6 +6,12 @@ test('連續答對才進入間隔複習，所有階段答錯都重置',()=>{let 
 test('不出沒有答案或未到期的題目，全部範圍可提前練習',()=>{const cards=[base(),{...base(),id:'missing',answer:null},{...base(),id:'future',stage:0,due:2000},{...base(),id:'due',stage:0,due:500}];assert.deepEqual(eligible(cards,'','recommended',1000).map(c=>c.id),['one','due']);assert.deepEqual(eligible(cards,'','due',1000).map(c=>c.id),['due']);assert.equal(eligible(cards,'','all',1000).length,3);assert.equal(eligible(cards,'國文','all',1000).length,0);assert.equal(new Set(shuffled(cards).map(c=>c.id)).size,cards.length);});
 test('備份保留照片與進度，拒絕格式錯誤、重複 ID 和不安全的圖片',()=>{const data={...initialState(),cards:[base()]};assert.deepEqual(validateBackup(JSON.parse(JSON.stringify(data))),data);assert.throws(()=>validateBackup({...data,version:2}));assert.throws(()=>validateBackup({...data,cards:[base(),base()]}));assert.throws(()=>validateBackup({...data,cards:[{...base(),question:'javascript:alert(1)'}]}));assert.throws(()=>validateBackup({...data,cards:[{...base(),stage:7}]}));assert.throws(()=>validateBackup({...data,target:0}));assert.throws(()=>validateBackup({...data,history:[{cardId:'one',correct:true,at:1}]}));});
 test('AI 辨識指令可隨備份保存且不得空白',()=>{const data={...initialState(),aiPrompt:'我的辨識指令'};assert.equal(validateBackup(data).aiPrompt,'我的辨識指令');assert.throws(()=>validateBackup({...data,aiPrompt:'  '}));});
+test('章節可隨備份保存且舊備份不需要章節欄位',()=>{
+ const data={...initialState(),cards:[{...base(),chapter:'  一元二次方程式  '}]};
+ assert.equal(validateBackup(data).cards[0].chapter,'一元二次方程式');
+ assert.equal(validateBackup({...data,cards:[base()]}).cards[0].chapter,undefined);
+ assert.throws(()=>validateBackup({...data,cards:[{...base(),chapter:'x'.repeat(61)}]}));
+});
 test('舊版預設辨識指令自動更新，自訂指令維持不變',()=>{
  const previous='忽略手寫筆跡、作答、圈選與塗改，將印刷題目、選項、公式及圖表資訊辨識為文字，保留原本順序。公式用 LaTeX，以 $...$ 包住；選項各占一行。遮住或不確定的內容標示 ??，不要猜測。\n\n先不解題，最後詢問：「是否需要解題並提供觀念思考與速解步驟？」';
  assert.equal(currentAiPrompt(previous),DEFAULT_AI_PROMPT);

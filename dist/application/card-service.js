@@ -6,13 +6,15 @@ export function createCardService({getState,commit,randomUUID=()=>crypto.randomU
   function normalizeDraft(draft,state,existing){
     if(!draft||typeof draft!=='object')throw Error('題目資料不完整。');
     const category=state.categories.includes(draft.category)?draft.category:state.categories[0];
-    const title=(draft.title||'').trim();
+    const title=(draft.title||'').trim(),chapter=(draft.chapter||'').trim();
     const questionText=(draft.questionText||'').trim(),answerText=(draft.answerText||'').trim();
     if(title.length>100)throw Error('題目名稱不可超過 100 個字。');
+    if(chapter.length>60)throw Error('章節名稱不可超過 60 個字。');
     if(questionText.length>10000||answerText.length>10000)throw Error('題目與答案文字不可超過 10000 個字。');
     const card={
       ...draft,
       category,
+      chapter,
       question:draft.question||null,
       questionText,
       answer:draft.answer||null,
