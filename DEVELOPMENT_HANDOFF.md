@@ -1,75 +1,128 @@
-# 開發交接紀錄
+# 拾題開發與交接文件
 
-更新日期：2026-09-13（Asia/Taipei）
+更新日期：2026-09-17（Asia/Taipei）
 
-## 專案與目前狀態
+這是後續開發者與 Codex 的主要技術入口。使用方式請讀 `README.md` 與 `dist/manual.js`；未來構想請讀 `PRODUCT_ROADMAP.md`。
 
-- 專案：拾題｜錯題本，繁體中文、手機友善的單機網頁 App。
-- 儲存庫：https://github.com/leohong/wrong-question-book.git
-- 分支：main；本次功能已推送至提交 `2f27f9e`。
-- 線上網站：https://leohong.github.io/wrong-question-book/
-- 工作目錄：D:/MyProjects/wrong-question-book
-- 原生 HTML/CSS/JavaScript，網站直接使用 dist，不需前端建置。
-- GitHub Actions 將 dist 部署至 Pages；根目錄 index.html 是分支部署用的轉址入口。
-- IndexedDB 保存題庫與圖片，沒有登入或雲端同步；本機和線上網站資料來源不同，搬移需匯出／匯入備份。
+## 專案定位
 
-## 這段開發完成的功能
+- 繁體中文、手機優先的照片錯題本網頁 App。
+- 儲存庫：`https://github.com/leohong/wrong-question-book.git`
+- 正式網站：`https://leohong.github.io/wrong-question-book/`
+- 工作目錄：`E:\ProjectCode\Wrong question book`；主分支 `main`。
+- 原生 HTML、CSS、ES Modules，沒有前端打包步驟；Pages 直接發布 `dist/`。
+- local-first：題庫、照片與進度保存在目前網站來源的 IndexedDB；沒有登入、自動同步或後端。
+- 換網址、瀏覽器或裝置時，使用者手動匯出 ZIP 再匯入。
 
-### 題目與答案文字、LaTeX
+## 不可破壞的產品規則
 
-- 題目卡和答案卡都可手動輸入多行文字，最多 10,000 字。
-- 可只使用文字、只使用圖片，或兩者並用。
-- 題目至少要有圖片或非空白文字；答案圖片或非空白文字都可使題目參與練習。
-- 輸入時提供即時預覽；題庫列表、卡片詳情、練習都顯示題目公式，揭曉答案時顯示答案公式。
-- 支援 `$...$`、`$$...$$`、`\(...\)`、`\[...\]`。
-- KaTeX 程式、CSS、字型與 MIT 授權保存在 dist/vendor/katex，不依賴 CDN。
-- 格式錯誤的公式保留原文；trust=false，限制宏展開與尺寸。
-- 儲存與 ZIP／JSON 備份保留原始 questionText、answerText，舊備份仍相容。
+1. 不得因部署、升級或快取問題清除使用者題庫。
+2. 題目與答案可使用圖片、文字或兩者；沒有答案的卡片不參與練習，但可加入考卷。
+3. 題目和答案可共用一張原圖，`questionMask` 與 `answerMask` 必須獨立。
+4. 答案使用題目圖片時，必須取裁切後、抹除前的 `questionOriginal`。
+5. 手動抹除第一次按下只取周圍 11 × 11 像素平均色；實際拖曳後才建立筆畫，單點不能留下遮罩。
+6. 預設連續答對 3 次後進入間隔複習；間隔 1、3、7、14、30 天，之後每 30 天；答錯重置。
+7. 不得暗示 IndexedDB 是雲端同步。介面必須保留明確的備份說明。
+8. 不重新導入已放棄的 Gemini、OpenAI 或 Hugging Face 自動去筆跡方案，除非使用者再次明確要求。
+9. 修改先在本機驗證；只有使用者明確要求 `git push` 才推送。
 
-### 刪除圖片與平均取色
+## 已完成功能
 
-- 編輯題目與答案图片時提供「刪除圖片」，保留文字與公式；儲存卡片才套用，取消不生效。
-- 刪除題目圖片時也移除題目原圖引用及遮罩；答案若仍引用共用原圖，照片仍保留。
-- 抹除工具按下背景時，取周圍 11 × 11 原圖像素的 RGB 平均值；邊緣裁切有效區域，透明像素按白底合成。
-- 單點只取色，拖曳才塗抹；保留復原、還原、放大、移動圖片等功能。
+- 快速新增、完整新增、題目與答案配對。
+- 照片框選、四邊調整、拖曳選框、關閉及重畫選框。
+- 手動抹除、取色、復原、重置、放大及移動畫布。
+- 題目／答案共用原圖與獨立遮罩。
+- 題目及答案文字、Markdown、KaTeX 公式。
+- 五科預設分類、自訂分類、20／30／自訂題數練習。
+- 熟練度、間隔複習、統計圖及各分類掌握度。
+- 雙欄 A4 自動組卷、答案卷及黑白列印調整。
+- ZIP 備份、舊 JSON 相容、完整性檢查及原子還原。
+- 複製／分享圖片和自訂 AI 指令；不自動上傳。
+- 資料庫重置需輸入「重置」確認。
 
-### AI 複製測試版
+## 架構進度
 
-- 有圖片的題目／答案，在詳情與編輯畫面提供「複製圖片＋AI 指令（測試版）」、「複製指令」、「下載圖片」。
-- 複製裁切並套用目前遮罩的圖片，轉成 PNG；使用 ClipboardItem 包含 image/png 與 text/plain。
-- 在點擊事件中立即啟動 clipboard.write，以 Promise 準備圖片，保留使用者手勢。
-- 瀏覽器／外部聊天介面可能只貼出圖片，提供單獨複製指令與下載作為備用。
-- 不自動傳送圖片到外部服務，不含 Gemini／ChatGPT API 串接；使用者自行貼上，再將結果貼回文字欄位。
-- 指令：忽略手寫內容，辨識印刷文字、選項、公式與圖表，公式使用 LaTeX；不確定內容標示【無法辨識】；先不解題，詢問是否需要解題並提供步驟。
-- 實際 Gemini／ChatGPT 貼上相容性尚未由使用者回報確認；目前驗證為複製邏輯測試。
+1. 頁面層已拆至 `dist/pages/`。
+2. 資料操作已集中至 `dist/application/*-service.js`。
+3. 卡片控制器與圖片流程已拆至 `dist/components/`、`dist/workflows/`。
+4. `app-store.js` 已集中狀態、初始化、寫入鎖與 commit；commit `5798acb` 已推送。
+5. 已有 50 項 Node 單元、資料及呈現層測試。
+6. Playwright 端到端測試已建立，涵蓋新增、重新載入、練習、統計、ZIP 還原、手機圖片框選、手動抹除、共用原圖及考卷。
 
-### 自然、社會分類
+第六階段目前在工作目錄中。接手時必須重新查看 `git status`，不要只依這段快照判斷。
 
-- 預設分類：國文、英文、數學、自然、社會。
-- 舊 IndexedDB 設定沒有 expandedCategories 標記時，讀取後一次補上自然、社會並保存標記；不重複新增，之後刪除分類不會反覆補回。
-- 若補上後超過 100 個分類則略過。
-- 重置資料庫恢復五科，保留使用者自行管理分類能力。
+## 分層與責任
 
-### 使用說明書
+```text
+dist/app.js                     啟動、導覽、模組組裝
+  ├─ pages/                     頁面渲染與頁面事件
+  ├─ components/                可重用互動元件
+  └─ workflows/                 跨畫面的圖片流程
+application/*-service.js        使用案例、輸入驗證、狀態轉換
+application/app-store.js        記憶體狀態、寫入鎖、commit
+storage.js                      IndexedDB、交易、圖片引用、遷移
+domain.js                       純規則：選題、熟練度、備份驗證
+backup.js / media.js            ZIP、圖片雜湊、縮圖、格式轉換
+```
 
-- 主選單新增「使用說明」。
-- 首次使用或說明版本不同時自動切到說明頁；新使用者仍先看到裝置儲存說明對話框。
-- 按「我已閱讀」才記錄目前版本，之後同版本不自動顯示。
-- 版本：dist/manual.js 的 MANUAL_VERSION，目前為 2026-09-13.1。
-- 閱讀狀態儲存在 localStorage 的 shiti-manual-read-version，依瀏覽器／網站來源分開。
-- 更新功能時同步修改說明內容並提高 MANUAL_VERSION，讓使用者再次看到新說明。
+頁面不能直接寫 IndexedDB。新增資料操作時先放入 application service，再由 App Store commit。可純函式化的規則放 `domain.js` 並寫單元測試。
 
-## 主要檔案
+## IndexedDB 與卡片模型
 
-- dist/app.js：畫面、編輯卡片、練習、AI 按鈕綁定、說明頁入口。
-- dist/domain.js：hasQuestion／hasAnswer、練習資格、備份驗證與文字欄位。
-- dist/storage.js：IndexedDB、照片引用、分類一次補齊標記。
-- dist/math-answer.js：題目與答案公式渲染、即時預覽。
-- dist/ai-copy.js：AI_PROMPT、PNG 轉換、剪貼簿與下載。
-- dist/manual-erase.js：抹除與 sampleBackgroundColor。
-- dist/manual.js：說明版本、閱讀狀態與內容。
-- dist/style.css／dist/index.html：版面與載入入口。
-- tests：domain、storage、backup、reset、math-answer、manual-erase、ai-copy、manual。
+目前資料庫版本為 2，stores：
+
+- `settings`：revision、categories、target、aiPrompt、遷移標記。
+- `questions`：題目中繼資料與 `image:<sha256>` 引用。
+- `images`：原始壓縮 Blob，以 SHA-256 去重。
+- `thumbnails`：可重建的 360 px 縮圖，不進備份。
+- `reviewLogs`：逐次作答紀錄。
+- `book`：舊版整包資料，只供遷移，成功後刪除。
+
+卡片主要欄位：
+
+```text
+id, title, category
+question, questionOriginal, questionMask, questionText
+answer, answerMask, answerText
+streak, stage, attempts, mistakes, created, due
+```
+
+遮罩為 `{version:1,width,height,strokes}`；stroke 保存 `color`、`size`、`points`。改格式時必須同步更新驗證、合成、備份及還原測試。
+
+### 寫入與衝突
+
+- App Store 阻止同一分頁重疊寫入；備份期間也阻止資料變更。
+- `storage.js` 使用 revision 防止舊分頁覆寫新資料。
+- 圖片先準備完成再開交易；失敗不能留下未引用圖片。
+- 最後一個圖片引用移除後，才刪除 Blob 與縮圖。
+
+## 備份格式
+
+- ZIP manifest：`format: "shiti"`、`version: 2`。
+- `manifest.json` 保存狀態與圖片索引；圖片按 SHA-256 命名且只存一次。
+- 匯入上限：ZIP 512 MB；舊 JSON 200 MB。
+- 匯入先驗證格式、欄位、重複 ID、圖片雜湊及遮罩，再原子取代。
+- 匯入失敗必須保留原資料。
+
+資料模型改動至少驗證：舊資料遷移、ZIP round trip、舊 JSON、損壞備份、共用圖片、遮罩、失敗不覆寫。
+
+## 圖片處理經驗
+
+- 上傳限制 35 MB。
+- 裁切後品質：清晰 1800 px／.92、平衡 1600 px／.84、省空間 1200 px／.72。
+- 比較 JPEG 與 WebP 實際大小後保存較小者。
+- 列表讀縮圖，打開卡片才讀原圖；DOM 移除時釋放 Object URL。
+- 遮罩不能烘焙進共用原圖，否則答案無法顯示未抹除內容。
+- 遮罩不顯示時先查 `data-photo`、`data-mask`、`observeImages()`、Blob 轉換和尺寸，不要先用 cache busting 掩蓋問題。
+- 快速新增刻意略過抹除與清晰度確認；完整編輯才提供完整工具。
+
+## UI、文字與安全
+
+- 使用者文字先經 `esc()`；Markdown 不允許任意 HTML 或危險 URL。
+- KaTeX 使用本地資源、`trust=false`；無效公式保留原文。
+- 題目與答案文字各最多 10,000 字。
+- 修改使用說明時，同步修改 `dist/manual.js` 並提高 `MANUAL_VERSION`。
+- 新功能優先使用既有 `dialog`、`toast`、`safely`、page heading 與 service 注入方式。
 
 ## 本機開發與驗證
 
@@ -77,35 +130,61 @@
 npm ci
 npm run check
 npm test
+npx playwright install chromium
+npm run test:e2e
 npm start
 ```
 
-- 本機：http://127.0.0.1:4173/，npm start 用 Python HTTP server 服務 dist。
-- 本次最後完整測試：27 項通過，語法檢查通過。
-- fake-indexeddb 和 jsdom 測試不代表真實手機相機、觸控、剪貼簿效能或相容性。
-- Windows 沙箱可能阻擋 Node 測試建立子程序（spawn EPERM）；此次曾在核准後於沙箱外執行 npm test。
-- 不需子程序的獨立測試可用 node --test --test-isolation=none tests/指定檔案.test.js；避免把各測試共享的全域 mock 一起跑在同一隔離環境。
-- dist/vendor/katex 是網站必要資源，需要一起部署。
+- App：`http://127.0.0.1:4173/`。
+- Playwright：獨立使用 `http://127.0.0.1:4178/` 與新 browser context，不讀寫 4173 題庫。
+- Windows Playwright 使用已安裝的 Chrome；CI 使用下載的 Chromium。
+- Node 24：`npx -y node@24 --test`；E2E 可用 `npx -y node@24 node_modules/@playwright/test/cli.js test`。
+- `test-results/`、`playwright-report/` 必須留在 `.gitignore`。
 
-## 提交紀錄
+測試層級：
 
-- b3a900f：題目與答案文字、LaTeX、刪除圖片。
-- efc984c：抹除改為範圍平均取色。
-- 2f27f9e：AI 複製測試版、自然社會分類、版本化說明書。
+- `tests/*.test.js`：domain、storage、backup、服務與呈現模組。
+- `tests/e2e/app.spec.js`：跨模組使用者流程。
+- `tests/e2e/server.js`：只服務 `dist/` 的測試伺服器，不是正式伺服器。
 
-## 已知狀況與建議下一步
+圖片、IndexedDB、備份或頁面串接修改不能只跑函式測試；至少重跑相應 E2E。
 
-1. 線上曾無法使用；強制重新整理後使用者確認正常，推測是舊快取。app.js 入口已有版本查詢參數，但各個相依模組並非全部同步版本化。下一步可採一致資源版本或建置雜湊，避免新舊模組混用；不要用清除題庫方式處理快取。
-2. 在真實 Chrome／Safari、手機與 Gemini／ChatGPT 驗證同時貼上圖片與指令，以及備用複製／下載流程。
-3. 補充分類升級的專門測試，確認升級一次、保留自訂分類、使用者刪除後不再補回，以及多分頁版本衝突。
-4. AI 生成或辨識結果需使用者核對負號、分母、指數與圖表數值；目前不自動覆寫卡片。
-5. README 尚未完整同步 AI 複製、五科預設與說明書功能，可更新；使用者說明集中在 dist/manual.js。
-6. 使用者習慣先本機試用，再明確要求 git push；後續修改先交付本機，收到 push 要求再提交推送。
+## 部署與 Git
 
-## 下次接續方式
+- `.github/workflows/pages.yml` 使用 Node 24。
+- CI：`npm ci` → syntax check → Node tests → 安裝 Chromium → Playwright → 上傳 `dist/` → Pages。
+- 根目錄 `index.html` 只負責 branch deployment 導向 `dist/index.html`。
+- 修改載入圖時需考慮舊快取混用；不要用清除題庫解決快取。
+- Windows 遇到 dubious ownership：
 
-先讀本文件與 README.md，確認 git status、最新提交及任何 AGENTS.md，再依使用者指定功能工作。勿假設前一輪伺服器仍在執行。避免重置或清除現有題庫。若修改使用說明，更新 MANUAL_VERSION；若新增模組或更新載入方式，同步考量快取問題。
+```powershell
+git -c safe.directory="E:/ProjectCode/Wrong question book" status
+```
 
-## 後續產品規劃
+推送前：查看 status 和 diff、執行 `git diff --check`、三組測試、只 stage 核准檔案；使用者明確要求後才 push。
 
-考卷輸出與功能缺口優先順序記錄在 PRODUCT_ROADMAP.md。這些是待確認構想，尚未實作；下次可一起讀取。
+## 已放棄或受限方向
+
+- Gemini 曾出現 free-tier limit 0、HTTP 429，以及只回傳框座標、不回傳圖片。
+- Hugging Face 去筆跡測試未證明能可靠保留印刷文字和細線。
+- 目前採手動遮罩與外部 AI 複製／分享，不保存 API key，也不自動傳送照片。
+- Web Share、剪貼簿及相機依瀏覽器而異；自動測試不能取代真實裝置驗收。
+
+## 後續優先事項
+
+1. 真實 Android／iPhone 相機、觸控與長時間使用驗收。
+2. 統一 ES module 資源版本策略，避免新舊模組混用。
+3. 未儲存編輯提醒、最近備份時間與備份提醒。
+4. 題目搜尋、標籤、來源、批次分類。
+5. 回收筒或短期復原。
+6. 大題庫、低階手機與 512 MB 備份壓力測試。
+7. PWA／離線功能需先設計可靠更新策略。
+
+## 接手檢查清單
+
+1. 讀 `AGENTS.md`、本文件、`README.md`、`PRODUCT_ROADMAP.md`。
+2. 執行 `git status --short`，辨認未推送工作。
+3. 不假設 4173 或 4178 伺服器仍在執行。
+4. 不重置、清空或匯入使用者的 4173 題庫做測試。
+5. 先定位責任層，避免把規則重新塞回 `app.js`。
+6. 完成後報告修改、測試、風險，以及是否已 commit／push。

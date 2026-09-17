@@ -2,6 +2,8 @@
 
 適合手機操作的繁體中文網頁 App。原生 HTML、CSS、JavaScript，無需安裝前端依賴。
 
+開發與接手請先閱讀 [DEVELOPMENT_HANDOFF.md](./DEVELOPMENT_HANDOFF.md)；後續構想與優先順序記錄在 [PRODUCT_ROADMAP.md](./PRODUCT_ROADMAP.md)。
+
 ## GitHub Pages 部署
 
 支援兩種發布來源：選擇 **Deploy from a branch → main → / (root)** 時，根目錄的 `index.html` 會自動導向 `dist/index.html`；選擇下方的 **GitHub Actions** 時則直接將 `dist` 發布為網站根目錄。根目錄 `.nojekyll` 可避免將 README 產生為首頁。
@@ -48,6 +50,8 @@ ZIP 使用隨網站附帶的 fflate 0.8.3（MIT，授權見 `dist/vendor/fflate-
 ## 驗證
 
 先執行 `npm ci` 安裝測試依賴；`npm run check` 檢查 JavaScript 語法。`npm test` 除練習規則外，也驗證 v1 遷移、1,000 題的局部寫入、照片去重與清理、多分頁衝突、ZIP／JSON 還原及損壞備份不覆寫資料。IndexedDB 測試使用 fake-indexeddb，不代表真實手機效能數據。
+
+`npm run test:e2e` 使用 Playwright Chromium 與獨立的 `http://127.0.0.1:4178` 測試資料庫，驗證文字題目新增及重新載入、作答後的統計更新，以及手機尺寸下的照片框選、共用題目原圖與考卷產生。第一次執行前需執行 `npx playwright install chromium`；GitHub Actions 會自動安裝瀏覽器並執行這些測試。
 
 未執行真實手機相機／觸控端到端測試。WebMCP 僅於支援的瀏覽器註冊題庫摘要、新增分類與開始練習工具；此環境沒有可用的 WebMCP 驗證上下文，尚未驗證實際註冊與呼叫。
 
