@@ -1,14 +1,13 @@
 import {AI_PROMPT} from '../ai-copy.js?v=share1';
 import {exportArchive,readBackup} from '../backup.js';
-import {initialState} from '../domain.js';
 import {storageDescription} from '../storage.js';
 import {esc,pageHeading} from '../ui.js';
 
 export function createSettingsPage({
   getState,
   getRoot,
-  commit,
-  addCategory,
+  categoryService,
+  settingsService,
   dialog,
   modal,
   toast,
@@ -32,7 +31,7 @@ export function createSettingsPage({
       modal.querySelector('#reset-confirmation').oninput=event=>{modal.querySelector('#confirm-reset').disabled=event.target.value.trim()!=='重置';};
       modal.querySelector('#confirm-reset').onclick=safely(async()=>{
         if(modal.querySelector('#reset-confirmation').value.trim()!=='重置')throw Error('請輸入「重置」以確認。');
-        await commit(initialState());
+        await settingsService.reset();
         modal.close();
         onDataReplaced();
         toast('資料庫已重置，所有題目與練習紀錄已清除');
@@ -46,7 +45,7 @@ export function createSettingsPage({
 
     root.querySelector('#category-form').onsubmit=safely(async event=>{
       event.preventDefault();
-      await addCategory(root.querySelector('#new-category').value);
+      await categoryService.add(root.querySelector('#new-category').value);
       render();
       toast('分類已新增');
     });
@@ -54,10 +53,7 @@ export function createSettingsPage({
       const oldName=button.dataset.rename;
       dialog('更改分類名稱',`<label class="field" for="rename-category">分類名稱</label><input id="rename-category" maxlength="30" value="${esc(oldName)}"><div class="actions"><button class="primary" id="confirm-rename">儲存名稱</button></div>`);
       modal.querySelector('#confirm-rename').onclick=safely(async()=>{
-        const name=modal.querySelector('#rename-category').value.trim();
-        if(!name||name.length>30)throw Error('名稱請輸入 1 到 30 個字。');
-        if(name!==oldName&&state.categories.includes(name))throw Error('已經有這個分類。');
-        await commit({...state,categories:state.categories.map(category=>category===oldName?name:category),cards:state.cards.map(card=>card.category===oldName?{...card,category:name}:card),history:state.history.map(item=>item.category===oldName?{...item,category:name}:item)});
+        const {name}=await categoryService.rename(oldName,modal.querySelector('#rename-category').value);
         onCategoryRenamed(oldName,name);
         modal.close();
         render();
@@ -65,21 +61,16 @@ export function createSettingsPage({
     });
     root.querySelectorAll('[data-remove]').forEach(button=>button.onclick=safely(async()=>{
       const category=button.dataset.remove;
-      if(state.categories.length<2||state.cards.some(card=>card.category===category))throw Error('只能刪除沒有題目的分類，且至少需保留一個分類。');
-      await commit({...state,categories:state.categories.filter(item=>item!==category)});
+      await categoryService.remove(category);
       onCategoryRemoved(category);
       render();
     }));
     root.querySelector('#save-target').onclick=safely(async()=>{
-      const target=Number(root.querySelector('#target-count').value);
-      if(!Number.isInteger(target)||target<1||target>10)throw Error('請輸入 1 到 10 的整數。');
-      await commit({...state,target});
+      await settingsService.setTarget(root.querySelector('#target-count').value);
       toast('熟練門檻已儲存');
     });
     root.querySelector('#save-ai-prompt').onclick=safely(async()=>{
-      const aiPrompt=root.querySelector('#ai-prompt-setting').value.trim();
-      if(!aiPrompt)throw Error('辨識指令不能空白。');
-      await commit({...state,aiPrompt});
+      await settingsService.setAiPrompt(root.querySelector('#ai-prompt-setting').value);
       toast('AI 辨識指令已儲存');
     });
     root.querySelector('#reset-ai-prompt').onclick=()=>{root.querySelector('#ai-prompt-setting').value=AI_PROMPT;};
@@ -110,7 +101,7 @@ export function createSettingsPage({
       dialog('確認匯入這份備份？',`<p>備份包含 <strong>${next.cards.length} 道題目</strong>、${next.categories.length} 個分類、${next.history.length} 次練習紀錄。</p><p class="hint">將取代目前 ${getState().cards.length} 道題目與練習紀錄。建議先匯出目前資料，避免遺失。</p><div class="actions"><button id="cancel-import">取消</button><button class="primary" id="confirm-import">取代並匯入</button></div>`);
       modal.querySelector('#cancel-import').onclick=()=>modal.close();
       modal.querySelector('#confirm-import').onclick=safely(async()=>{
-        await commit(next,assets);
+        await settingsService.replace(next,assets);
         modal.close();
         onDataReplaced();
         toast('匯入完成，照片與練習進度已還原');

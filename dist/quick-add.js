@@ -6,27 +6,6 @@ const LAST_CATEGORY='shiti-quick-category';
 const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const emptyMask=(width=1,height=1)=>({version:1,width,height,strokes:[]});
 
-export function buildQuickCard(state,draft,{id=crypto.randomUUID(),now=Date.now()}={}){
-  const category=state.categories.includes(draft.category)?draft.category:state.categories[0];
-  return {
-    id,
-    title:`${category}錯題 ${state.cards.length+1}`,
-    category,
-    question:draft.question,
-    questionOriginal:draft.questionOriginal||draft.question,
-    questionMask:draft.questionMask||emptyMask(),
-    answer:draft.answer||null,
-    answerText:(draft.answerText||'').trim(),
-    answerMask:draft.answer?draft.answerMask||emptyMask():undefined,
-    streak:0,
-    stage:-1,
-    due:null,
-    attempts:0,
-    mistakes:0,
-    created:now
-  };
-}
-
 function rememberedCategory(categories){
   try{const value=localStorage.getItem(LAST_CATEGORY);if(categories.includes(value))return value;}catch{}
   return categories[0];
@@ -61,7 +40,7 @@ async function quickCrop(file,dialog,onDone,onBack,toast){
   };
 }
 
-export function startQuickAdd({dialog,getState,commit,render,toast,openFull}){
+export function startQuickAdd({dialog,getState,saveCard,render,toast,openFull}){
   let draft={category:rememberedCategory(getState().categories),question:null,questionOriginal:null,questionMask:null,answer:null,answerText:'',answerMask:null};
   let saving=false;
   const selectFile=(camera,onFile)=>{const input=document.createElement('input');input.type='file';input.accept='image/*';if(camera)input.setAttribute('capture','environment');input.onchange=()=>input.files[0]&&onFile(input.files[0]);input.click();};
@@ -92,7 +71,7 @@ export function startQuickAdd({dialog,getState,commit,render,toast,openFull}){
     const hasAnswer=draft.answer||draft.answerText.trim();
     dialog('準備儲存',`<div class="quick-steps"><span>1 題目</span><span>2 答案</span><strong>3 儲存</strong></div><div class="quick-review"><div><span class="tag">${esc(draft.category)}</span>${preview(draft.question)}</div><div><span class="tag green">${hasAnswer?'答案已加入':'稍後補答案'}</span>${draft.answer?preview(draft.answer):draft.answerText?`<div class="answer-text">${esc(draft.answerText)}</div>`:'<p class="muted">儲存後可從題目卡補上答案。</p>'}</div></div><p class="hint">題目名稱會自動產生。需要抹除、AI 指令或詳細文字時，再開啟題目卡編輯。</p><div class="actions"><button id="quick-answer-back">返回答案</button><button id="quick-save">儲存並完成</button><button class="primary" id="quick-save-next">儲存並繼續</button></div>`);
     document.querySelector('#quick-answer-back').onclick=showAnswer;
-    const save=async continued=>{if(saving)return;saving=true;document.querySelectorAll('#quick-save,#quick-save-next').forEach(button=>button.disabled=true);try{const current=getState(),card=buildQuickCard(current,draft);rememberCategory(card.category);await commit({...current,cards:[card,...current.cards]});toast('題目已收藏');if(continued){draft={category:card.category,question:null,questionOriginal:null,questionMask:null,answer:null,answerText:'',answerMask:null};showQuestion();}else{document.querySelector('#modal').close();render();}}catch(error){toast(error.message);}finally{saving=false;}};
+    const save=async continued=>{if(saving)return;saving=true;document.querySelectorAll('#quick-save,#quick-save-next').forEach(button=>button.disabled=true);try{const card=await saveCard(draft);rememberCategory(card.category);toast('題目已收藏');if(continued){draft={category:card.category,question:null,questionOriginal:null,questionMask:null,answer:null,answerText:'',answerMask:null};showQuestion();}else{document.querySelector('#modal').close();render();}}catch(error){toast(error.message);}finally{saving=false;}};
     document.querySelector('#quick-save').onclick=()=>save(false);document.querySelector('#quick-save-next').onclick=()=>save(true);
   }
 

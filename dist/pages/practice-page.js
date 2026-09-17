@@ -1,11 +1,10 @@
-import {eligible,grade,shuffled} from '../domain.js';
 import {renderAnswers} from '../math-answer.js?v=markdown1';
 import {esc,pageHeading} from '../ui.js';
 
 export function createPracticePage({
   getState,
   getRoot,
-  commit,
+  practiceService,
   renderApp,
   dialog,
   modal,
@@ -18,12 +17,8 @@ export function createPracticePage({
   let session=null;
 
   function start(category,mode,count){
-    const state=getState();
-    if(!Number.isInteger(count)||count<1||count>200)throw Error('題數請輸入 1 到 200 的整數。');
-    if(!['all','due','recommended'].includes(mode)||category&&!state.categories.includes(category))throw Error('無效的出題範圍。');
-    const pool=eligible(state.cards,category,mode);
-    if(!pool.length)throw Error('這個範圍沒有已配對答案的題目。');
-    session={ids:shuffled(pool).slice(0,count).map(card=>card.id),index:0,correct:0,revealed:false,answering:false};
+    const created=practiceService.createSession(category,mode,count);
+    session={ids:created.ids,index:0,correct:0,revealed:false,answering:false};
     renderApp('practice');
     return {count:session.ids.length};
   }
@@ -42,7 +37,7 @@ export function createPracticePage({
     const mode=root.querySelector('#practice-mode');
     const count=root.querySelector('#practice-count');
     const update=()=>{
-      const available=eligible(state.cards,category.value,mode.value).length,wanted=Number(count.value);
+      const available=practiceService.available(category.value,mode.value).length,wanted=Number(count.value);
       root.querySelector('#eligible-note').textContent=available?`可出題 ${available} 題。本次將隨機選取 ${Math.min(Number.isInteger(wanted)&&wanted>0?wanted:0,available)} 題。`:'目前沒有可出的題目，請先新增題目與答案，或更改範圍。';
       root.querySelector('#start-practice').disabled=!available;
       root.querySelectorAll('[data-count]').forEach(button=>button.classList.toggle('active',Number(button.dataset.count)===wanted));
@@ -71,8 +66,7 @@ export function createPracticePage({
       session.answering=true;
       root.querySelectorAll('.grade-buttons button').forEach(button=>button.disabled=true);
       try{
-        const at=Date.now(),next=grade(card,correct,state.target,at);
-        await commit({...state,cards:state.cards.map(item=>item.id===card.id?next:item),history:[...state.history,{cardId:card.id,category:card.category,correct,at}]});
+        await practiceService.recordAnswer(card.id,correct);
         session.correct+=correct?1:0;
         session.index++;
         session.revealed=false;

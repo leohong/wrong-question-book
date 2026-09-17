@@ -61,7 +61,7 @@ KaTeX 的程式、樣式、字型及 MIT 授權隨網站存放於 `dist/vendor/k
 
 ## 前端模組
 
-`dist/app.js` 負責啟動、導覽、共用狀態及卡片編輯流程。各頁面的畫面與互動分開放在 `dist/pages/`：
+`dist/app.js` 負責啟動、導覽、共用狀態及卡片編輯畫面。各頁面的畫面與互動分開放在 `dist/pages/`：
 
 - `library-page.js`：題庫篩選、卡片清單與分頁顯示。
 - `practice-page.js`：練習安排、作答 session 與離開確認。
@@ -70,4 +70,11 @@ KaTeX 的程式、樣式、字型及 MIT 授權隨網站存放於 `dist/vendor/k
 - `manual-page.js`：使用說明頁。
 - `ui.js`：共用 HTML escaping、日期與頁首模板。
 
-頁面模組透過注入的 `getState`、`commit` 和畫面 callback 協作，不直接讀寫 IndexedDB。資料庫仍統一由 `storage.js` 管理；熟練與選題規則仍由 `domain.js` 管理。
+會改變資料的操作集中在 `dist/application/`，頁面只取得輸入並顯示結果：
+
+- `card-service.js`：新增、編輯及刪除卡片，統一補齊新卡的熟練欄位。
+- `category-service.js`：新增、改名與刪除分類，改名時同步更新題目及歷史紀錄。
+- `practice-service.js`：驗證出題範圍、建立題目順序及提交作答結果。
+- `settings-service.js`：熟練門檻、辨識指令、資料重置及備份取代。
+
+頁面透過注入的服務與畫面 callback 協作，不直接組合整份資料或讀寫 IndexedDB。服務呼叫由 `app.js` 注入的 `commit`，資料庫仍統一由 `storage.js` 管理；熟練與選題規則仍由 `domain.js` 管理。ZIP 解析與產生由 `backup.js` 處理，匯入後的資料取代則經過設定服務。

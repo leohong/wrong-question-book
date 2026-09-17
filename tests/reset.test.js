@@ -3,19 +3,21 @@ import assert from 'node:assert/strict';
 import {JSDOM} from 'jsdom';
 import {initialState} from '../dist/domain.js';
 import {createSettingsPage} from '../dist/pages/settings-page.js';
+import {createSettingsService} from '../dist/application/settings-service.js';
 
 function setup(fail=false){
   const dom=new JSDOM('<main id="main"></main><dialog id="modal"></dialog>');
   globalThis.document=dom.window.document;
-  globalThis.navigator=dom.window.navigator;
+  Object.defineProperty(globalThis,'navigator',{value:dom.window.navigator,configurable:true,writable:true});
   const root=document.querySelector('#main'),modal=document.querySelector('#modal');
   modal.close=()=>{};
   let state={...initialState(),cards:[{id:'one'}],history:[{cardId:'one'}]},writes=0,rendered=0;
+  const commit=async next=>{if(fail)throw Error('storage failed');state=next;writes++;};
   const page=createSettingsPage({
     getState:()=>state,
     getRoot:()=>root,
-    async commit(next){if(fail)throw Error('storage failed');state=next;writes++;},
-    async addCategory(){},
+    categoryService:{add:async()=>{},rename:async()=>{},remove:async()=>{}},
+    settingsService:createSettingsService({getState:()=>state,commit}),
     dialog(_title,body){modal.innerHTML=body;},
     modal,
     toast(){},
