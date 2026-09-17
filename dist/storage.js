@@ -1,4 +1,4 @@
-import {validateBackup,initialState,DEFAULT_AI_PROMPT} from './domain.js';
+import {validateBackup,initialState,DEFAULT_AI_PROMPT,currentAiPrompt} from './domain.js';
 import {isImageRef,dataUrlToBlob,imageId,thumbnail,blobToDataUrl} from './media.js';
 
 export const storageDescription='單機模式：照片分開儲存並自動去重，答題只更新進度。資料保存在目前瀏覽器，請定期匯出備份；更換網址需手動搬移。';
@@ -35,7 +35,7 @@ export function createStorage(name='shiti-question-book') {
       request(tx.objectStore('settings').get('state')),request(tx.objectStore('questions').getAll()),
       request(tx.objectStore('reviewLogs').getAll()),request(tx.objectStore('book').get('state'))
     ]);await done;
-    if(meta){revision=meta.revision;snapshot={version:1,categories:meta.categories,target:meta.target,aiPrompt:meta.aiPrompt??DEFAULT_AI_PROMPT,cards:cards.sort((a,b)=>b.created-a.created),history};if(!meta.expandedCategories){const categories=[...new Set([...snapshot.categories,'自然','社會'])];if(categories.length<=100)return await save({...snapshot,categories});}return snapshot;}
+    if(meta){revision=meta.revision;snapshot={version:1,categories:meta.categories,target:meta.target,aiPrompt:currentAiPrompt(meta.aiPrompt),cards:cards.sort((a,b)=>b.created-a.created),history};if(!meta.expandedCategories){const categories=[...new Set([...snapshot.categories,'自然','社會'])];if(categories.length<=100)return await save({...snapshot,categories});}return snapshot;}
     revision=0;snapshot=initialState();
     if(!legacy)return null;
     // Validation/conversion happens before writes. Original v1 data remains until commit.

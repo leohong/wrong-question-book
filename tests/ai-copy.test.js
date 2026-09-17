@@ -11,7 +11,9 @@ test('分開複製 PNG 圖片與辨識指令，圖片準備前已呼叫剪貼簿
  assert.ok(writeCalled);assert.equal((await item.data['image/png']).type,'image/png');
  assert.equal(item.data['text/plain'],undefined);assert.ok(closed);
  await copyPrompt();assert.ok(AI_PROMPT.includes('是否需要解題'));
- assert.ok(AI_PROMPT.includes('標示 ??，不要猜測'));
+ assert.ok(AI_PROMPT.includes('保留原本題目解答順序與位置'));
+ assert.ok(AI_PROMPT.includes('公式用 LaTeX格式'));
+ assert.ok(AI_PROMPT.includes('標示???，不要猜測'));
  assert.ok(AI_PROMPT.includes('觀念思考與速解步驟'));
  await assert.rejects(cardPng({question:null},'question'),/沒有圖片/);
 });

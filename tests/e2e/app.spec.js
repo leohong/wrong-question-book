@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 
-const MANUAL_VERSION='2026-09-17.2';
+const MANUAL_VERSION='2026-09-17.3';
 const pixelPng=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAEAAAAAwCAIAAAAuKetIAAAAJ0lEQVR4nO3PQQ0AIBDAsAP/nuGNAvZoFSzZOjNnyNi1W7Zu3QkAAADgB2XQAXlW6j2OAAAAAElFTkSuQmCC','base64');
 
 async function openCleanApp(page){

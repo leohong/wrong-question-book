@@ -1,7 +1,9 @@
 import {validMask} from './mask-layer.js';
 export const INTERVALS = [1, 3, 7, 14, 30];
 export const DAY = 86400000;
-export const DEFAULT_AI_PROMPT='忽略手寫筆跡、作答、圈選與塗改，將印刷題目、選項、公式及圖表資訊辨識為文字，保留原本順序。公式用 LaTeX，以 $...$ 包住；選項各占一行。遮住或不確定的內容標示 ??，不要猜測。\n\n先不解題，最後詢問：「是否需要解題並提供觀念思考與速解步驟？」';
+const PREVIOUS_AI_PROMPT='忽略手寫筆跡、作答、圈選與塗改，將印刷題目、選項、公式及圖表資訊辨識為文字，保留原本順序。公式用 LaTeX，以 $...$ 包住；選項各占一行。遮住或不確定的內容標示 ??，不要猜測。\n\n先不解題，最後詢問：「是否需要解題並提供觀念思考與速解步驟？」';
+export const DEFAULT_AI_PROMPT='忽略手寫筆跡、作答、圈選與塗改，將印刷題目、選項、公式及圖表資訊辨識為文字，保留原本題目解答順序與位置。公式用 LaTeX格式；遮住或不確定的內容標示???，不要猜測。先不解題，最後詢問：「是否需要解題並提供觀念思考與速解步驟？」';
+export const currentAiPrompt = value => value==null||value===PREVIOUS_AI_PROMPT?DEFAULT_AI_PROMPT:value;
 export const initialState = () => ({version:1,categories:['國文','英文','數學','自然','社會'],target:3,aiPrompt:DEFAULT_AI_PROMPT,cards:[],history:[]});
 export function grade(card, correct, target, now = Date.now()) {
   const next = {...card, attempts:card.attempts+1, mistakes:card.mistakes+(correct?0:1)};
@@ -37,5 +39,5 @@ export function validateBackup(data, {allowImageRefs=false}={}) {
     ids.add(c.id);
   }
   for(const h of data.history) if(!h || typeof h.cardId!=='string' || typeof h.category!=='string' || h.category.length>30 || typeof h.correct!=='boolean' || !date(h.at)) throw Error('備份中的練習紀錄不正確。');
-  return {version:1,categories:[...data.categories],target:data.target,aiPrompt:data.aiPrompt??DEFAULT_AI_PROMPT,cards:data.cards.map(c=>({id:c.id,title:c.title,category:c.category,question:c.question,...(c.questionText!==undefined?{questionText:c.questionText}:{}),answer:c.answer,...(c.answerText!==undefined?{answerText:c.answerText}:{}),...(c.questionMask?{questionMask:structuredClone(c.questionMask)}:{}),...(c.answerMask?{answerMask:structuredClone(c.answerMask)}:{}),...(c.questionOriginal?{questionOriginal:c.questionOriginal}:{}),streak:c.streak,stage:c.stage,attempts:c.attempts,mistakes:c.mistakes,created:c.created,due:c.due})),history:data.history.map(h=>({cardId:h.cardId,category:h.category,correct:h.correct,at:h.at}))};
+  return {version:1,categories:[...data.categories],target:data.target,aiPrompt:currentAiPrompt(data.aiPrompt),cards:data.cards.map(c=>({id:c.id,title:c.title,category:c.category,question:c.question,...(c.questionText!==undefined?{questionText:c.questionText}:{}),answer:c.answer,...(c.answerText!==undefined?{answerText:c.answerText}:{}),...(c.questionMask?{questionMask:structuredClone(c.questionMask)}:{}),...(c.answerMask?{answerMask:structuredClone(c.answerMask)}:{}),...(c.questionOriginal?{questionOriginal:c.questionOriginal}:{}),streak:c.streak,stage:c.stage,attempts:c.attempts,mistakes:c.mistakes,created:c.created,due:c.due})),history:data.history.map(h=>({cardId:h.cardId,category:h.category,correct:h.correct,at:h.at}))};
 }
