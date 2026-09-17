@@ -6,6 +6,8 @@ const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&
 let currentExam=null;
 
 const clamp=value=>Math.max(0,Math.min(100,Number(value)||0));
+export const examZoom=value=>Math.max(.3,Math.min(1.6,Number(value)||1));
+const touchDistance=touches=>Math.hypot(touches[0].clientX-touches[1].clientX,touches[0].clientY-touches[1].clientY);
 
 export function examImageFilter(mode='document',background=35,ink=45){
   if(mode==='original')return 'none';
@@ -54,12 +56,26 @@ function paper(exam){
 
 export function renderExam({root,state,optionsHtml,toast}){
   if(currentExam){
-    root.innerHTML=`<div class="exam-controls"><button id="exam-back">← 重新設定</button><div class="row"><button id="exam-reroll">重新抽題</button><button class="primary" id="exam-print">直接列印</button></div></div><section class="exam-image-controls exam-screen-note" aria-label="列印圖片調整"><div class="exam-image-mode"><label class="field" for="exam-image-mode">列印圖片</label><select id="exam-image-mode"><option value="original">原圖</option><option value="document">黑白文件</option><option value="high-contrast">高對比黑白（測試）</option></select></div><label>背景更白 <input id="exam-background" type="range" min="0" max="100" value="${currentExam.background}"></label><label>文字更深 <input id="exam-ink" type="range" min="0" max="100" value="${currentExam.ink}"></label><p id="exam-image-note" class="muted" aria-live="polite"></p></section><p class="hint exam-screen-note">已選 ${currentExam.cards.length} 題。圖片調整只套用在預覽、列印與 PDF，不會修改題庫原圖。請使用 Chrome、Edge 或 Safari 的列印功能。</p><div id="exam-output">${paper(currentExam)}</div>`;
+    root.innerHTML=`<div class="exam-controls"><button id="exam-back">← 重新設定</button><div class="row"><button id="exam-reroll">重新抽題</button><button class="primary" id="exam-print">直接列印</button></div></div><section class="exam-image-controls exam-screen-note" aria-label="列印圖片調整"><div class="exam-image-mode"><label class="field" for="exam-image-mode">列印圖片</label><select id="exam-image-mode"><option value="original">原圖</option><option value="document">黑白文件</option><option value="high-contrast">高對比黑白（測試）</option></select></div><label>背景更白 <input id="exam-background" type="range" min="0" max="100" value="${currentExam.background}"></label><label>文字更深 <input id="exam-ink" type="range" min="0" max="100" value="${currentExam.ink}"></label><p id="exam-image-note" class="muted" aria-live="polite"></p></section><section class="exam-zoom-controls exam-screen-note" aria-label="考卷預覽縮放"><button id="exam-zoom-out" aria-label="縮小考卷">−</button><input id="exam-zoom" type="range" min="30" max="160" step="5" aria-label="考卷縮放比例"><button id="exam-zoom-in" aria-label="放大考卷">＋</button><button id="exam-zoom-fit">符合螢幕</button><output id="exam-zoom-value"></output><span>可在考卷上雙指縮放</span></section><p class="hint exam-screen-note">已選 ${currentExam.cards.length} 題。考卷固定為 A4 雙欄，手機方向不會改變版面。圖片調整只套用在預覽、列印與 PDF，不會修改題庫原圖。</p><div id="exam-output" class="exam-viewport"><div id="exam-pages">${paper(currentExam)}</div></div>`;
     renderAnswers(root);
-    const output=root.querySelector('#exam-output'),mode=root.querySelector('#exam-image-mode'),background=root.querySelector('#exam-background'),ink=root.querySelector('#exam-ink'),note=root.querySelector('#exam-image-note');
+    const output=root.querySelector('#exam-pages'),viewport=root.querySelector('#exam-output'),mode=root.querySelector('#exam-image-mode'),background=root.querySelector('#exam-background'),ink=root.querySelector('#exam-ink'),note=root.querySelector('#exam-image-note');
     mode.value=currentExam.imageMode;
     const applyImageMode=()=>{currentExam.imageMode=mode.value;currentExam.background=Number(background.value);currentExam.ink=Number(ink.value);const original=mode.value==='original';background.disabled=original;ink.disabled=original;output.style.setProperty('--exam-image-filter',examImageFilter(mode.value,currentExam.background,currentExam.ink));note.textContent=original?'保留照片原本的顏色與底色。':mode.value==='document'?'降低底色、保留較淡的圖形與線條；建議先用這個模式。':'底色最白且較省墨，但淡色細線可能消失，請先查看預覽。';};
     [mode,background,ink].forEach(control=>control.oninput=applyImageMode);applyImageMode();
+    const zoom=root.querySelector('#exam-zoom'),zoomValue=root.querySelector('#exam-zoom-value');
+    const applyZoom=value=>{currentExam.viewScale=examZoom(value);output.style.setProperty('--exam-scale',currentExam.viewScale);zoom.value=String(Math.round(currentExam.viewScale*100));zoomValue.value=`${Math.round(currentExam.viewScale*100)}%`;};
+    const fit=()=>{const paperElement=output.querySelector('.exam-paper');if(!paperElement)return;currentExam.autoFit=true;applyZoom(Math.min(1,(viewport.clientWidth-4)/paperElement.offsetWidth));};
+    zoom.oninput=()=>{currentExam.autoFit=false;applyZoom(Number(zoom.value)/100);};
+    root.querySelector('#exam-zoom-out').onclick=()=>{currentExam.autoFit=false;applyZoom(currentExam.viewScale-.1);};
+    root.querySelector('#exam-zoom-in').onclick=()=>{currentExam.autoFit=false;applyZoom(currentExam.viewScale+.1);};
+    root.querySelector('#exam-zoom-fit').onclick=fit;
+    let pinch=null;
+    viewport.addEventListener('touchstart',event=>{if(event.touches.length===2)pinch={distance:touchDistance(event.touches),scale:currentExam.viewScale};},{passive:true});
+    viewport.addEventListener('touchmove',event=>{if(!pinch||event.touches.length!==2)return;event.preventDefault();currentExam.autoFit=false;applyZoom(pinch.scale*touchDistance(event.touches)/pinch.distance);},{passive:false});
+    viewport.addEventListener('touchend',event=>{if(event.touches.length<2)pinch=null;},{passive:true});
+    currentExam.viewScale??=1;applyZoom(currentExam.viewScale);
+    requestAnimationFrame(()=>{if(currentExam?.autoFit!==false)fit();});
+    if(globalThis.ResizeObserver)new globalThis.ResizeObserver(()=>{if(currentExam?.autoFit)fit();}).observe(viewport);
     root.querySelector('#exam-back').onclick=()=>{currentExam=null;renderExam({root,state,optionsHtml,toast});};
     root.querySelector('#exam-reroll').onclick=()=>{currentExam.cards=selectExamCards(state.cards,currentExam);renderExam({root,state,optionsHtml,toast});};
     root.querySelector('#exam-print').onclick=()=>{window.print();setTimeout(()=>toast('若沒有出現列印視窗，請改用 Chrome、Edge 或 Safari 開啟本頁。'),300);};
@@ -70,7 +86,7 @@ export function renderExam({root,state,optionsHtml,toast}){
   const update=()=>{const pool=examPool(state.cards,category.value,scope.value),wanted=Number(count.value),valid=Number.isInteger(wanted)&&wanted>=1&&wanted<=200;available.textContent=pool.length?`這個範圍可使用 ${pool.length} 題，考卷將抽出 ${valid?Math.min(wanted,pool.length):0} 題。`:'這個範圍沒有可用題目。';generate.disabled=!pool.length||!valid;root.querySelectorAll('[data-exam-count]').forEach(button=>button.classList.toggle('active',Number(button.dataset.examCount)===wanted));};
   [category,scope,count].forEach(input=>input.oninput=update);
   root.querySelectorAll('[data-exam-count]').forEach(button=>button.onclick=()=>{count.value=button.dataset.examCount;update();});
-  generate.onclick=()=>{try{const selected=selectExamCards(state.cards,{category:category.value,scope:scope.value,count:Number(count.value)});if(!selected.length)throw Error('這個範圍沒有可用題目。');currentExam={title:root.querySelector('#exam-title').value.trim()||'拾題練習卷',category:category.value,scope:scope.value,count:Number(count.value),includeAnswers:root.querySelector('#exam-answers').checked,imageMode:'document',background:35,ink:45,cards:selected};renderExam({root,state,optionsHtml,toast});}catch(error){toast(error.message);}};
+  generate.onclick=()=>{try{const selected=selectExamCards(state.cards,{category:category.value,scope:scope.value,count:Number(count.value)});if(!selected.length)throw Error('這個範圍沒有可用題目。');currentExam={title:root.querySelector('#exam-title').value.trim()||'拾題練習卷',category:category.value,scope:scope.value,count:Number(count.value),includeAnswers:root.querySelector('#exam-answers').checked,imageMode:'document',background:35,ink:45,viewScale:1,autoFit:true,cards:selected};renderExam({root,state,optionsHtml,toast});}catch(error){toast(error.message);}};
   update();
 }
 

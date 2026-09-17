@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 
-const MANUAL_VERSION='2026-09-17.3';
+const MANUAL_VERSION='2026-09-17.5';
 const pixelPng=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAEAAAAAwCAIAAAAuKetIAAAAJ0lEQVR4nO3PQQ0AIBDAsAP/nuGNAvZoFSzZOjNnyNi1W7Zu3QkAAADgB2XQAXlW6j2OAAAAAElFTkSuQmCC','base64');
 
 async function openCleanApp(page){
@@ -73,6 +73,24 @@ test('ZIP 備份可在重置後完整匯入',async({page})=>{
   await expect(page.getByRole('heading',{name:'備份測試'})).toBeVisible();
 });
 
+test('快速新增取消下一題仍保留先前已儲存卡片',async({page})=>{
+  await openCleanApp(page);
+  await page.getByRole('button',{name:'＋ 快速新增'}).click();
+  const chooser=page.waitForEvent('filechooser');
+  await page.getByRole('button',{name:'選擇圖片',exact:true}).click();
+  await (await chooser).setFiles({name:'question.png',mimeType:'image/png',buffer:pixelPng});
+  await page.locator('#quick-crop-full').click();
+  await page.locator('#quick-crop-use').click();
+  await page.locator('#quick-later').click();
+  await expect(page.getByRole('button',{name:'儲存並結束'})).toBeVisible();
+  await page.getByRole('button',{name:'儲存並繼續'}).click();
+  await expect(page.getByText('本次已儲存 1 道題目')).toBeVisible();
+  await expect(page.getByRole('button',{name:'存檔結束'})).toBeVisible();
+  await page.getByRole('button',{name:'取消本題'}).click();
+  await expect(page.locator('#modal')).not.toBeVisible();
+  await expect(page.locator('.card')).toHaveCount(1);
+});
+
 test('@mobile 手機尺寸可用照片快速新增並產生考卷',async({page,context})=>{
   await openCleanApp(page);
   await page.getByRole('button',{name:'＋ 快速新增'}).click();
@@ -113,6 +131,16 @@ test('@mobile 手機尺寸可用照片快速新增並產生考卷',async({page,c
   await page.locator('#exam-generate').click();
   await expect(page.getByText('已選 1 題。')).toBeVisible();
   await expect(page.locator('#exam-output')).toContainText('拾題練習卷');
+  await expect(page.getByText('可在考卷上雙指縮放')).toBeVisible();
+  const layout=await page.locator('.exam-paper').first().evaluate(element=>({
+    width:element.offsetWidth,height:element.offsetHeight,
+    columns:getComputedStyle(element.querySelector('.exam-columns')).gridTemplateColumns.split(' ').length
+  }));
+  expect(layout.width/layout.height).toBeCloseTo(210/297,1);
+  expect(layout.columns).toBe(2);
+  const before=Number(await page.locator('#exam-pages').evaluate(element=>getComputedStyle(element).zoom));
+  await page.getByRole('button',{name:'放大考卷'}).click();
+  await expect.poll(()=>page.locator('#exam-pages').evaluate(element=>Number(getComputedStyle(element).zoom))).toBeGreaterThan(before);
 });
 
 test('@mobile 手機尺寸可顯示未加分隔符的 LaTeX 公式',async({page})=>{
