@@ -1,4 +1,4 @@
-import {renderAnswers} from '../math-answer.js?v=markdown1';
+import {renderAnswers} from '../math-answer.js?v=bare1';
 import {esc,pageHeading} from '../ui.js';
 
 export function createPracticePage({

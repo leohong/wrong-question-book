@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {JSDOM} from 'jsdom';
-import {previewAnswer,renderAnswers} from '../dist/math-answer.js';
+import {normalizeBareLatex,previewAnswer,renderAnswers} from '../dist/math-answer.js';
 const dom=new JSDOM('<div id="root"><div class="answer-text"></div><textarea></textarea></div>');
 globalThis.document=dom.window.document;
 globalThis.Node=dom.window.Node;
@@ -42,4 +42,24 @@ test('題目卡與答案卡共用公式排版',()=>{
  const question=document.createElement('div');question.className='question-text';question.textContent=sample;root.append(question);
  renderAnswers(root);assert.equal(question.querySelectorAll('.katex').length,4);
  question.remove();
+});
+
+test('未加分隔符的常見分數與根號也能顯示',()=>{
+ const bare=String.raw`() 9. 已知 x=-3，則 \frac{x-9}{4} + \frac{x^2-x+1}{3} 之值為何？
+(A) \frac{3}{4}
+(B) \frac{4}{3}
+(C) \frac{4}{5}
+(D) \frac{5}{4}`;
+ previewAnswer(element,bare);
+ assert.equal(element.querySelectorAll('.mfrac').length,6);
+ previewAnswer(element,String.raw`巢狀 \frac{1}{\frac{2}{3}}，立方根 \sqrt[3]{8}`);
+ assert.equal(element.querySelectorAll('.mfrac').length,2);
+ assert.equal(element.querySelectorAll('.sqrt').length,1);
+});
+
+test('既有公式與行內程式碼不會被重複包裝',()=>{
+ const original=String.raw`$\frac{1}{2}$ \(\sqrt{4}\) `+'`\\frac{1}{2}`';
+ assert.equal(normalizeBareLatex(original),original);
+ assert.equal(normalizeBareLatex(String.raw`未完成 \frac{1}`),String.raw`未完成 \frac{1}`);
+ assert.equal(normalizeBareLatex(null),'');
 });

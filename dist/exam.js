@@ -1,6 +1,6 @@
 import {shuffled} from './domain.js';
 import {photoAttributes} from './image-view.js';
-import {renderAnswers} from './math-answer.js';
+import {renderAnswers} from './math-answer.js?v=bare1';
 
 const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 let currentExam=null;

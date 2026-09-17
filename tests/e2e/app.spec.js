@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 
-const MANUAL_VERSION='2026-09-17.1';
+const MANUAL_VERSION='2026-09-17.2';
 const pixelPng=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAEAAAAAwCAIAAAAuKetIAAAAJ0lEQVR4nO3PQQ0AIBDAsAP/nuGNAvZoFSzZOjNnyNi1W7Zu3QkAAADgB2XQAXlW6j2OAAAAAElFTkSuQmCC','base64');
 
 async function openCleanApp(page){
@@ -113,4 +113,16 @@ test('@mobile 手機尺寸可用照片快速新增並產生考卷',async({page,c
   await page.locator('#exam-generate').click();
   await expect(page.getByText('已選 1 題。')).toBeVisible();
   await expect(page.locator('#exam-output')).toContainText('拾題練習卷');
+});
+
+test('@mobile 手機尺寸可顯示未加分隔符的 LaTeX 公式',async({page})=>{
+  await openCleanApp(page);
+  await addTextCard(page,{
+    title:'手機公式測試',
+    question:String.raw`已知 x=-3，求 \frac{x-9}{4} + \frac{x^2-x+1}{3}。`,
+    answer:String.raw`答案是 \frac{4}{3}`
+  });
+  await page.getByRole('button',{name:/手機公式測試/}).click();
+  await expect(page.locator('#modal .question-text .mfrac')).toHaveCount(2);
+  await expect(page.locator('#modal .answer-text .mfrac')).toHaveCount(1);
 });

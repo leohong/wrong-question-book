@@ -1,6 +1,6 @@
 import {INTERVALS,hasAnswer} from '../domain.js';
 import {photoAttributes} from '../image-view.js?v=pick1';
-import {renderAnswers} from '../math-answer.js?v=markdown1';
+import {renderAnswers} from '../math-answer.js?v=bare1';
 import {esc,formatDate,pageHeading} from '../ui.js';
 import {metricsHtml} from './statistics-page.js';
 

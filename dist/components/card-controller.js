@@ -1,5 +1,5 @@
 import {AI_PROMPT,copyCardImage,copyCardWithPrompt,copyPrompt,downloadCard} from '../ai-copy.js?v=copyall1';
-import {previewAnswer} from '../math-answer.js?v=markdown1';
+import {previewAnswer} from '../math-answer.js?v=bare1';
 import {hasQuestion,hasAnswer} from '../domain.js';
 import {photoAttributes} from '../image-view.js?v=pick1';
 import {esc,formatDate} from '../ui.js';

@@ -1,5 +1,5 @@
 import {needsManual} from './manual.js';
-import {renderAnswers} from './math-answer.js?v=markdown1';
+import {renderAnswers} from './math-answer.js?v=bare1';
 import {initialState} from './domain.js';
 import {load,save} from './storage.js';
 import {observeImages} from './image-view.js?v=pick1';
