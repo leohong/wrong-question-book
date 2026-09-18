@@ -1,5 +1,5 @@
 // Bump this version whenever the user-facing instructions change.
-export const MANUAL_VERSION='2026-09-17.6';
+export const MANUAL_VERSION='2026-09-18.3';
 const KEY='shiti-manual-read-version';
 export function needsManual(storage){try{storage=storage||window.localStorage;return storage.getItem(KEY)!==MANUAL_VERSION;}catch{return true;}}
 export function acknowledgeManual(storage){try{storage=storage||window.localStorage;storage.setItem(KEY,MANUAL_VERSION);return true;}catch{return false;}}
@@ -10,6 +10,6 @@ export function manualContent(){return `
 <section class="panel"><h2>3. 裁切、原圖與手動抹除</h2><p>完整模式的裁切框可移動、調整四邊，也可按框上的 × 清除後重畫。抹除時，第一下只會選取周圍 11 × 11 像素的平均背景色；開始拖曳後才會留下抹除筆畫。</p><p>題目卡保留裁切後、抹除前的原圖，抹除內容以遮罩另外保存。答案選擇「使用題目卡原始圖片」時會共用同一張原圖，但題目與答案各自保留遮罩，因此不會重複儲存照片，也不會把題目卡的抹除效果帶到答案卡。</p><p>儲存前可選清晰、平衡或省空間品質。請放大核對負號、小數點、分母、指數與圖形標示。</p></section>
 <section class="panel"><h2>4. Markdown 與數學公式</h2><p>題目與答案文字支援標題、粗體、斜體、清單、引用、程式碼與網址。常見的 <code>\\frac{...}{...}</code> 與 <code>\\sqrt{...}</code> 會自動辨識；仍建議行內公式用 <code>$...$</code>，例如 <code>$-\\frac{19}{7}$</code>，獨立公式用 <code>$$...$$</code>。</p><p>完整編輯時會即時預覽，題庫卡片、題目詳情及練習畫面也會顯示格式。每個欄位最多 10,000 字；無法解析的公式會保留原文。</p></section>
 <section class="panel"><h2>5. 搭配 Gemini 或 ChatGPT 辨識</h2><p>在圖片卡片展開 AI 工具後，可按「全部複製」一次將圖片與 AI 指令寫入剪貼簿，再貼到支援多格式剪貼簿的服務。若瀏覽器或目標服務只接受其中一種內容，請改用「複製圖片」與「複製指令」分開操作；也可下載圖片。</p><p>內建指令要求忽略手寫內容，保留題目、解答、公式及圖表的順序與位置，把遮住或不確定的地方標示為 <code>???</code>，不猜測且不先解題；最後詢問是否需要解題並提供觀念思考與速解步驟。把辨識結果貼回文字欄位後，仍需自行核對原圖。</p></section>
-<section class="panel"><h2>6. 自動產生考卷</h2><p>在「產生考卷」設定卷名、科目、章節及出題範圍。隨機模式會從符合條件的卡片抽題；手動模式可勾選題目、全選篩選結果，並以上移、下移調整出題順序。</p><p>考卷固定採 A4 直式雙欄版面，不會因手機方向改成單欄。每欄最多 5 題、每頁最多 10 題；可在預覽上雙指縮放，或使用縮放列調整大小及符合螢幕。</p><p>可選擇是否附上答案卷。沒有答案的卡片會在答案卷顯示原題；產生考卷不會改變熟練度。</p></section>
+<section class="panel"><h2>6. 自動產生考卷</h2><p>組卷分為快速推薦、自訂條件與手動選題三種。快速推薦會優先安排已到期、常錯、少練及尚未熟練的題目；自訂條件可依科目、章節、熟練狀態及練習次數篩選。</p><p>手動選題會顯示題目圖片或文字預覽，可勾選、只看已選題目並調整順序。若開啟「不足目標題數時，由系統自動補滿」，系統會依推薦順序補足題數。</p><p>系統會記住上次使用的組卷方式、題數及是否附答案卷。考卷固定採 A4 直式雙欄，可在預覽上雙指縮放。沒有答案的卡片會在答案卷顯示原題；產生考卷不會改變熟練度。</p></section>
 <section class="panel"><h2>7. 練習、熟練度與統計</h2><p>在「開始練習」選擇分類、出題範圍及 1–200 題。先自行作答，再翻開答案並判定答對或答錯；每題判定會立即保存。</p><p>預設連續答對 3 次後進入間隔複習，間隔依序為 1、3、7、14、30 天，之後每 30 天複習。任何階段答錯都會重置；熟練門檻可在設定調整，統計頁會顯示近期答題與各分類進度。</p></section>
 <section class="panel"><h2>8. 儲存、備份與重置</h2><p>題庫、照片與進度只保存在目前網址及瀏覽器，沒有自動雲端同步；本機預覽和 GitHub Pages 的資料彼此獨立。換手機、瀏覽器或網址前，請先在「設定與資料」匯出 ZIP，再到新環境匯入。</p><p>匯入備份會取代目前題庫。「重置資料庫」會清除目前瀏覽器中的所有題目、照片、作答紀錄與熟練進度，並恢復預設分類；需要保留資料時請先匯出備份。</p></section>`;}

@@ -1,6 +1,6 @@
 import {test,expect} from '@playwright/test';
 
-const MANUAL_VERSION='2026-09-17.6';
+const MANUAL_VERSION='2026-09-18.3';
 const pixelPng=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAEAAAAAwCAIAAAAuKetIAAAAJ0lEQVR4nO3PQQ0AIBDAsAP/nuGNAvZoFSzZOjNnyNi1W7Zu3QkAAADgB2XQAXlW6j2OAAAAAElFTkSuQmCC','base64');
 
 async function openCleanApp(page){
@@ -130,8 +130,10 @@ test('@mobile 手機尺寸可用照片快速新增並產生考卷',async({page,c
   await expect(page.getByRole('heading',{name:'編輯題目卡'})).toBeVisible();
   await page.locator('#save-card').click();
   await page.getByRole('button',{name:/產生考卷/}).click();
-  await page.locator('#exam-selection-mode').selectOption('manual');
+  await page.locator('[data-exam-mode="manual"]').click();
+  await expect(page.locator('[data-exam-mode="manual"]')).toHaveClass(/active/);
   await expect(page.locator('#exam-manual-list')).toContainText('國文 · 代數');
+  await expect(page.locator('.exam-manual-preview')).toBeVisible();
   await page.locator('[data-exam-card]').check();
   await page.locator('#exam-generate').click();
   await expect(page.getByText('已選 1 題。')).toBeVisible();

@@ -4,7 +4,7 @@ import {initialState} from './domain.js';
 import {load,save} from './storage.js';
 import {observeImages} from './image-view.js?v=pick1';
 import {startQuickAdd} from './quick-add.js?v=chapter1';
-import {renderExam as renderExamPage} from './exam.js?v=iosscale1';
+import {renderExam as renderExamPage} from './exam.js?v=examux1';
 import {$,esc} from './ui.js';
 import {createLibraryPage} from './pages/library-page.js';
 import {createPracticePage} from './pages/practice-page.js';
